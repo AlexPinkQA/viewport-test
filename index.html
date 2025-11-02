@@ -8,7 +8,7 @@
     html, body {
       margin: 0;
       padding: 0;
-      background: #0b0b0b;
+      background: #555555; /* changed to gray */
       font-family: monospace;
       font-size: 14px;
       height: 100%;
@@ -25,9 +25,8 @@
       padding: 12px;
       white-space: pre-wrap;
       z-index: 9999;
+      color: #00ff90; /* green */
     }
-    .line1 { color: #AAAAAA; } /* gray */
-    .line2 { color: #00ff90; } /* green */
   </style>
 </head>
 <body>
@@ -35,12 +34,10 @@
 
   <script>
     function updateViewportInfo() {
-      const fullBrowserSize = `🖥  1. Full browser size: ${window.screen.width} × ${window.screen.height}`;
-      const gameWindowSize = `🪟  2. Actual game window size (put this in DevTools): ${window.innerWidth} × ${window.innerHeight}`;
-      const output = `<span class='line1'>${fullBrowserSize}</span>\n<span class='line2'>${gameWindowSize}</span>`;
-      document.getElementById('viewport-info').innerHTML = output;
+      const gameWindowSize = `🪟  Actual game window size (put this in DevTools): ${window.innerWidth} × ${window.innerHeight}`;
+      document.getElementById('viewport-info').textContent = gameWindowSize;
       console.clear();
-      console.log(`${fullBrowserSize}\n${gameWindowSize}`);
+      console.log(gameWindowSize);
     }
 
     window.addEventListener('resize', updateViewportInfo);
