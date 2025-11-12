@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Actual Game Window Size</title>
+  <title>Pixi Pseudo Fullscreen Viewport</title>
   <style>
     html, body {
       margin: 0;
@@ -11,44 +11,50 @@
       height: 100vh;
       width: 100vw;
       overflow: hidden;
-      background: #555;
-      font-family: monospace;
-      color: #00ff90;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      padding-top: env(safe-area-inset-top, 10px);
+      background: #555555;
     }
-    #viewport-info {
-      background: rgba(0,0,0,0.75);
-      padding: 10px 20px;
-      border-radius: 12px;
-      border: 1px solid #00ff90;
-      white-space: pre-wrap;
-      text-align: center;
+    #game-container {
+      width: 100%;
+      height: 100%;
     }
   </style>
+  <!-- Pixi.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.2.4/pixi.min.js"></script>
 </head>
 <body>
-  <div id="viewport-info">Loading...</div>
+  <div id="game-container"></div>
 
-  <script type="text/javascript">
-    function updateViewport() {
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const info = `🪟 Actual game window size (DevTools): ${vw} × ${vh}`;
-      document.getElementById('viewport-info').textContent = info;
-      console.clear();
-      console.log(info);
+  <script>
+    // Create Pixi application
+    const app = new PIXI.Application({
+      width: window.innerWidth,
+      height: window.innerHeight,
+      backgroundColor: 0x555555,
+    });
+
+    document.getElementById('game-container').appendChild(app.view);
+
+    // Create a text object
+    const infoText = new PIXI.Text(`🪟 Actual game window size: ${window.innerWidth} × ${window.innerHeight}`, {
+      fontFamily: 'monospace',
+      fontSize: 24,
+      fill: 0x00ff90,
+      align: 'center',
+    });
+    infoText.anchor.set(0.5, 0);
+    infoText.x = app.screen.width / 2;
+    infoText.y = 20;
+    app.stage.addChild(infoText);
+
+    // Resize function to maintain pseudo fullscreen
+    function resize() {
+      app.renderer.resize(window.innerWidth, window.innerHeight);
+      infoText.text = `🪟 Actual game window size: ${window.innerWidth} × ${window.innerHeight}`;
+      infoText.x = app.screen.width / 2;
     }
 
-    window.addEventListener('resize', updateViewport);
-    window.addEventListener('orientationchange', updateViewport);
-
-    // Optional: try to hide Safari UI on load
-    window.addEventListener('load', () => setTimeout(() => window.scrollTo(0,1), 100));
-
-    updateViewport();
+    window.addEventListener('resize', resize);
+    window.addEventListener('orientationchange', resize);
   </script>
 </body>
 </html>
