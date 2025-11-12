@@ -1,60 +1,149 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <!-- Viewport for pseudo fullscreen on iOS Safari -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Viewport Testing - Game Window</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #555555; /* gray background */
-      font-family: monospace;
-      font-size: 14px;
-      height: 100vh;
-      width: 100vw;
-      overflow: hidden; /* hide scrollbars */
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
+    <meta charset="utf-8" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no, shrink-to-fit=no">
+    <title>iOS Canvas Test</title>
+    <style>
+        html, body { margin:0; height:100%; background:#000; color:#fff; }
+        /* Stop Chrome iOS text autosizing that changes layout scale in landscape */
+        html { -webkit-text-size-adjust: 100% !important; }
 
-    .info-box {
-      position: fixed;
-      top: env(safe-area-inset-top, 10px);
-      left: 10px;
-      right: 10px;
-      background: rgba(0, 0, 0, 0.75);
-      border: 1px solid #00ff90;
-      border-radius: 12px;
-      padding: 12px;
-      white-space: pre-wrap;
-      z-index: 9999;
-      color: #00ff90; /* green text */
-      text-align: center;
-    }
-  </style>
+        /* Fill the visual viewport; 100dvh avoids the URL bar bug */
+        .wrap {
+            width: 100vw;
+            height: 100dvh;
+        }
+        @supports not (height: 100dvh) {
+            .wrap { height: 100vh; }
+        }
+
+        /* Safe area paddings so nothing hides under notches/home bar */
+        body {
+            padding: env(safe-area-inset-top) env(safe-area-inset-right)
+            env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        canvas { display:block; width:100%; height:100%; }
+        .hud { position:fixed; left:8px; top:8px; font:12px/1.2 system-ui; opacity:.8 }
+    </style>
 </head>
 <body>
-  <pre id="viewport-info" class="info-box">Loading viewport info...</pre>
+<div class="wrap">
+    <canvas id="c"></canvas>
+</div>
+<pre class="hud" id="hud"></pre>
+<script>
+    (function(){
+        const canvas = document.getElementById('c');
+        const hud = document.getElementById('hud');
 
-  <script>
-    function updateViewportInfo() {
-      const gameWindowSize = `🪟  Actual game window size (put this in DevTools): ${window.innerWidth} × ${window.innerHeight}`;
-      document.getElementById('viewport-info').textContent = gameWindowSize;
-      console.clear();
-      console.log(gameWindowSize);
-    }
+        function log() {
+            const vv = window.visualViewport;
+            const r = canvas.getBoundingClientRect();
+            hud.textContent =
+                `inner: ${innerWidth}×${innerHeight}\n` +
+                `vv:    ${vv?.width.toFixed(1)}×${vv?.height.toFixed(1)} @ scale ${vv?.scale?.toFixed(3)}\n` +
+                `rect:  ${r.width.toFixed(1)}×${r.height.toFixed(1)}\n` +
+                `css:   ${canvas.clientWidth}×${canvas.clientHeight}\n` +
+                `dpr:   ${devicePixelRatio}`;
+        }
 
-    // Update info on resize
-    window.addEventListener('resize', updateViewportInfo);
+        // Robust canvas sizing: use layout (client*) and correct for zoom
+        function sizeCanvas() {
+            const cssW = canvas.clientWidth;
+            const cssH = canvas.clientHeight;
 
-    // Initial update on page load
-    updateViewportInfo();
+            const dpr = window.devicePixelRatio || 1;
+            const vv = window.visualViewport;
+            const pr = Math.min(dpr * (vv ? 1 / vv.scale : 1), 3); // cap huge buffers
 
-    // Pseudo fullscreen trigger: scroll slightly to hide Safari nav/footer
-    window.addEventListener('load', () => setTimeout(() => window.scrollTo(0, 1), 100));
-  </script>
+            const w = Math.round(cssW * pr);
+            const h = Math.round(cssH * pr);
+
+            if (canvas.width !== w || canvas.height !== h) {
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.setTransform(pr, 0, 0, pr, 0, 0); // 1 CSS px == 1 unit
+                draw(ctx, cssW, cssH);
+            }
+            log();
+        }
+
+        function draw(ctx, w, h) {
+            ctx.clearRect(0,0,w,h);
+            // test pattern
+            const grad = ctx.createLinearGradient(0,0,w,h);
+            grad.addColorStop(0,'#0ff'); grad.addColorStop(1,'#f0f');
+            ctx.fillStyle = grad; ctx.fillRect(0,0,w,h);
+            ctx.fillStyle = '#111'; ctx.fillRect(10,10, w-20, 60);
+            ctx.fillStyle = '#fff'; ctx.font = '24px system-ui';
+            ctx.fillText(`Canvas CSS: ${Math.round(w)}×${Math.round(h)}`, 20, 50);
+        }
+
+        // iOS/WebKit quirk: measure AFTER layout/toolbars settle ⇒ double rAF
+        function settle(fn){ requestAnimationFrame(()=>requestAnimationFrame(fn)); }
+
+        const onChange = () => settle(sizeCanvas);
+
+        window.addEventListener('resize', onChange);
+        window.addEventListener('orientationchange', onChange);
+        window.visualViewport && window.visualViewport.addEventListener('resize', onChange);
+        document.addEventListener('visibilitychange', onChange);
+
+        onChange();
+
+// Chrome iOS viewport bug: wrong metrics on initial landscape load.
+// Force a re-measure after Chrome finishes its first paint cycle.
+        if (/CriOS\/\d+/.test(navigator.userAgent)) {
+            // run once shortly after load
+            window.addEventListener('load', () => {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        window.scrollTo(0, 0); // collapse toolbar
+                        sizeCanvas();          // or call your update/onChange()
+                    });
+                });
+            });
+
+            // also re-measure when tab bar hides on first touch
+            window.visualViewport?.addEventListener('resize', () => {
+                requestAnimationFrame(sizeCanvas);
+            });
+        }
+        window.addEventListener('load', () => {
+            const c = document.querySelector('canvas');
+            const r = c.getBoundingClientRect();
+            const vv = window.visualViewport;
+
+            const info = document.createElement('pre');
+            info.style.position = 'fixed';
+            info.style.top = '0';
+            info.style.left = '0';
+            info.style.color = '#fff';
+            info.style.background = 'rgba(0,0,0,0.6)';
+            info.style.padding = '8px';
+            info.style.font = '12px monospace';
+            info.style.zIndex = 9999;
+            info.textContent =
+                `inner: ${innerWidth}×${innerHeight}\n` +
+                `vv: ${vv?.width?.toFixed(1)}×${vv?.height?.toFixed(1)} @ scale ${vv?.scale?.toFixed(3)}\n` +
+                `dpr: ${devicePixelRatio}\n` +
+                `rect: ${r.width.toFixed(1)}×${r.height.toFixed(1)}`;
+            document.body.appendChild(info);
+        });
+        const tryMaximize = () => {
+            window.scrollTo(0, 1);
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+                sizeCanvas(); // your resize routine
+            }, 50);
+            window.removeEventListener('pointerdown', tryMaximize);
+        };
+        window.addEventListener('pointerdown', tryMaximize, { once: true });
+    })();
+</script>
 </body>
 </html>
