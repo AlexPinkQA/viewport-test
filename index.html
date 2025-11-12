@@ -1,137 +1,72 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Viewport + Safari Fullscreen Swipe</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body {
-            height: 100%;
-            overflow: hidden;
-            -webkit-overflow-scrolling: touch;
-            background: #111;
-            color: #0f0;
-            font-family: -apple-system, monospace;
-        }
-        #canvas {
-            width: 100%;
-            height: 100%;
-            background: #000;
-            display: block;
-        }
-        #info {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.7);
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            z-index: 100;
-            pointer-events: none;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Pixi.js iOS Pseudo Fullscreen Gesture Demo</title>
+<style>
+  html, body {
+    margin:0;
+    padding:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#555555;
+  }
+  body {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    -webkit-user-select:none;
+    -webkit-touch-callout:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #game-container { width:100%; height:100%; position:relative; }
+  #hint-hand {
+    position:absolute;
+    bottom:50px;
+    left:50%;
+    transform:translateX(-50%);
+    width:40px;
+    height:40px;
+    z-index:9999;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" stroke="white" stroke-width="4" fill="none"/><line x1="32" y1="16" x2="32" y2="48" stroke="white" stroke-width="4"/></svg>') no-repeat center/contain;
+    animation: bounce 1s infinite;
+  }
+  @keyframes bounce {
+    0%,100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-10px); }
+  }
+  #infoText { position:absolute; top:20px; left:50%; transform:translateX(-50%); color:#00ff90; font-family:monospace; font-size:20px; text-align:center; z-index:9998; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.2.4/pixi.min.js"></script>
 </head>
 <body>
+<div id="game-container"></div>
+<div id="infoText">🪟 Actual game window size: 0 × 0</div>
+<div id="hint-hand"></div>
+<script>
+const app = new PIXI.Application({ width: window.innerWidth, height: window.innerHeight, backgroundColor:0x555555 });
+document.getElementById('game-container').appendChild(app.view);
 
-    <canvas id="canvas"></canvas>
-    <div id="info">Очікування...</div>
+const infoText = document.getElementById('infoText');
+function resizeCanvas() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  app.renderer.resize(w,h);
+  infoText.textContent = `🪟 Actual game window size: ${w} × ${h}`;
+}
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', resizeCanvas);
+window.addEventListener('load', resizeCanvas);
 
-    <script>
-        // === Детекція Safari iOS ===
-        const isSafariIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) &&
-                            /WebKit/.test(navigator.userAgent) &&
-                            !/CriOS/.test(navigator.userAgent) &&
-                            !/FXIOS/.test(navigator.userAgent);
-
-        if (!isSafariIOS) {
-            document.body.innerHTML = '<div style="color:red;padding:20px;">Ця сторінка — ТІЛЬКИ для Safari на iPhone/iPad</div>';
-            throw new Error("Not Safari iOS");
-        }
-
-        const canvas = document.getElementById('canvas');
-        const info = document.getElementById('info');
-        let startY = 0;
-        const SWIPE_THRESHOLD = 50;
-
-        // === Оновлення viewport + canvas ===
-        function updateViewport() {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-
-            info.textContent = `${w} × ${h}`;
-
-            // Для PixiJS: оновлюємо renderer
-            // if (window.gameApp) gameApp.renderer.resize(w, h);
-
-            canvas.width = w;
-            canvas.height = h;
-            canvas.style.width = w + 'px';
-            canvas.style.height = h + 'px';
-
-            console.log('Viewport updated:', w, 'x', h);
-        }
-
-        // === Свайп для активації fullscreen в Safari ===
-        function handleTouchStart(e) {
-            startY = e.touches[0].clientY;
-        }
-
-        function handleTouchEnd(e) {
-            if (!startY) return;
-            const endY = e.changedTouches[0].clientY;
-            const diff = startY - endY; // > 0 = вгору
-
-            if (diff > SWIPE_THRESHOLD) {
-                // Свайп вгору → ховаємо UI Safari
-                triggerSafariFullscreen();
-            }
-            startY = 0;
-        }
-
-        function triggerSafariFullscreen() {
-            // 1. Прокручуємо на 1px — Safari ховає панелі
-            window.scrollTo(0, 1);
-
-            // 2. Додаємо штучний "контейнер" для скролу
-            if (!document.getElementById('scroll-trick')) {
-                const div = document.createElement('div');
-                div.id = 'scroll-trick';
-                div.style.height = '1px';
-                document.body.appendChild(div);
-            }
-
-            // 3. Примусово скролимо ще раз після затримки
-            setTimeout(() => window.scrollTo(0, 1), 100);
-
-            // 4. Оновлюємо viewport після ховання панелей
-            setTimeout(updateViewport, 400);
-        }
-
-        // === Ініціалізація ===
-        window.addEventListener('load', () => {
-            updateViewport();
-
-            // Touch події
-            document.addEventListener('touchstart', handleTouchStart, { passive: true });
-            document.addEventListener('touchend', handleTouchEnd, { passive: true });
-
-            // Оновлення при зміні (поворот, ховання панелі)
-            window.addEventListener('resize', updateViewport);
-            if (window.visualViewport) {
-                window.visualViewport.addEventListener('resize', updateViewport);
-            }
-
-            // Автоматично ховаємо UI при старті (опціонально)
-            setTimeout(triggerSafariFullscreen, 800);
-        });
-
-        // === Глобальні функції для TypeScript / PixiJS ===
-        window.updateViewport = updateViewport;
-        window.triggerSafariFullscreen = triggerSafariFullscreen;
-    </script>
+// Gesture hint: show hand animation and message
+const hintHand = document.getElementById('hint-hand');
+hintHand.addEventListener('touchstart', () => {
+  // Minimal scroll to encourage Safari to hide bars
+  window.scrollTo(0,1);
+  setTimeout(resizeCanvas,50);
+  // Hide hint after interaction
+  hintHand.style.display='none';
+});
+</script>
 </body>
 </html>
