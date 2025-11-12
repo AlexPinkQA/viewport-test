@@ -3,25 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Pixi.js Pseudo Fullscreen Demo</title>
+  <title>Pixi.js iOS Pseudo Fullscreen</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      width: 100vw;
+      width: 100%;
       height: 100%;
       overflow: hidden;
       background: #555555;
     }
     body {
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       -webkit-user-select: none;
       -webkit-touch-callout: none;
       -webkit-tap-highlight-color: transparent;
     }
     #game-container {
-      position: absolute;
-      top: 0;
-      left: 0;
       width: 100%;
       height: 100%;
     }
@@ -32,44 +30,39 @@
   <div id="game-container"></div>
 
   <script>
-    // Create Pixi Application
     const app = new PIXI.Application({
       width: window.innerWidth,
       height: window.innerHeight,
-      backgroundColor: 0x555555,
+      backgroundColor: 0x555555
     });
     document.getElementById('game-container').appendChild(app.view);
 
-    // Create info text
     const infoText = new PIXI.Text(`🪟 Actual game window size: ${window.innerWidth} × ${window.innerHeight}`, {
       fontFamily: 'monospace',
       fontSize: 24,
       fill: 0x00ff90,
-      align: 'center',
+      align: 'center'
     });
     infoText.anchor.set(0.5, 0);
     infoText.x = window.innerWidth / 2;
     infoText.y = 20;
     app.stage.addChild(infoText);
 
-    // Function to resize canvas dynamically
     function resizeCanvas() {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      app.renderer.resize(w, h);
-      infoText.text = `🪟 Actual game window size: ${w} × ${h}`;
-      infoText.x = w / 2;
+      app.renderer.resize(window.innerWidth, window.innerHeight);
+      infoText.text = `🪟 Actual game window size: ${window.innerWidth} × ${window.innerHeight}`;
+      infoText.x = window.innerWidth / 2;
     }
 
     window.addEventListener('resize', resizeCanvas);
     window.addEventListener('orientationchange', resizeCanvas);
+    window.addEventListener('load', resizeCanvas);
 
-    // Initial resize on load
-    window.addEventListener('load', () => {
-      resizeCanvas();
-      // Optional: small scroll to trigger Safari pseudo fullscreen gesture
-      setTimeout(() => window.scrollTo(0, 1), 100);
-    });
+    // Gesture-trigger for pseudo fullscreen (hides iOS Safari bars)
+    window.addEventListener('pointerdown', () => {
+      window.scrollTo(0,1);
+      setTimeout(resizeCanvas, 50);
+    }, { once: true });
   </script>
 </body>
 </html>
