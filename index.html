@@ -3,86 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Safari Fullscreen Swipe Test</title>
+    <title>Fullscreen Swipe Test</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
             height: 100%;
             overflow: hidden;
             background: #000;
-            font-family: -apple-system, sans-serif;
-            -webkit-text-size-adjust: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
         }
         #canvas {
             width: 100%;
             height: 100%;
-            background: #1a001a;
             display: block;
+            background: linear-gradient(135deg, #1a001a, #330033);
         }
-        #size {
+        #debug {
             position: fixed;
-            top: 10px;
-            left: 10px;
-            color: #0f0;
+            top: 8px;
+            left: 8px;
             background: rgba(0,0,0,0.7);
+            color: #0f0;
+            font: bold 13px/1 monospace;
             padding: 6px 10px;
-            font: bold 13px monospace;
-            border-radius: 6px;
+            border-radius: 8px;
             z-index: 9999;
             pointer-events: none;
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            opacity: 0.9;
         }
     </style>
 </head>
 <body>
 
-    <div id="canvas"></div>
-    <div id="size">— × —</div>
+    <canvas id="canvas"></canvas>
+    <div id="debug">?</div>
 
     <script>
-        // Перевірка: тільки Safari iOS
-        const isSafariIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) &&
-                            /AppleWebKit/.test(navigator.userAgent) &&
-                            !/CriOS|FXIOS|EdgiOS/.test(navigator.userAgent);
-
-        if (!isSafariIOS) {
-            document.body.innerHTML = '<div style="color:#f66;padding:20px;">ТІЛЬКИ SAFARI iOS</div>';
-            throw '';
-        }
-
-        const sizeEl = document.getElementById('size');
+        const canvas = document.getElementById('canvas');
+        const debug = document.getElementById('debug');
         let startY = 0;
         const SWIPE_THRESHOLD = 70; // пікселів вгору
 
-        // Оновлення розміру viewport
+        // === Оновлення розміру ===
         function updateSize() {
             const w = window.innerWidth;
             const h = window.innerHeight;
-            sizeEl.textContent = `${w} × ${h}`;
-            console.log('Viewport:', w, 'x', h);
+            debug.textContent = `${w}×${h}`;
+            canvas.width = w;
+            canvas.height = h;
         }
 
-        // Примусово ховаємо панелі Safari
+        // === Примусово ховаємо панелі Safari ===
         function hideSafariUI() {
-            // 1. Прокрутка на 1px — ховає верхню адресу
+            // Ключ: scrollTo(0,1) — ховає обидві панелі
             window.scrollTo(0, 1);
 
-            // 2. Додаємо "приманку" для скролу
-            if (!document.getElementById('scroll-hack')) {
-                const hack = document.createElement('div');
-                hack.id = 'scroll-hack';
-                hack.style.cssText = 'position:absolute;bottom:0;height:1px;width:100%;pointer-events:none;';
-                document.body.appendChild(hack);
+            // Додатковий хак: штучний скрол
+            if (!window._scrollHack) {
+                const div = document.createElement('div');
+                div.style.height = '1px';
+                div.style.position = 'absolute';
+                div.style.bottom = '0';
+                document.body.appendChild(div);
+                window._scrollHack = true;
             }
 
-            // 3. Повторна прокрутка
             setTimeout(() => window.scrollTo(0, 1), 50);
-
-            // 4. Оновлюємо розмір після ховання (400 мс — стандарт)
-            setTimeout(updateSize, 400);
+            setTimeout(updateSize, 500); // після анімації
         }
 
-        // Свайп вгору
+        // === Свайп вгору ===
         function onTouchStart(e) {
             startY = e.touches[0].clientY;
         }
@@ -98,22 +91,20 @@
             startY = 0;
         }
 
-        // Ініціалізація
+        // === Запуск ===
         window.addEventListener('load', () => {
             updateSize();
 
-            // Touch події
             document.addEventListener('touchstart', onTouchStart, { passive: true });
             document.addEventListener('touchend', onTouchEnd, { passive: true });
 
-            // Оновлення при повороті / хованні панелей
             window.addEventListener('resize', updateSize);
             if (window.visualViewport) {
                 window.visualViewport.addEventListener('resize', updateSize);
             }
 
-            // Автоматичний режим через 1.5 сек (для тесту)
-            setTimeout(hideSafariUI, 1500);
+            // Автоматичний вхід у fullscreen (як у грі)
+            setTimeout(hideSafariUI, 800);
         });
     </script>
 </body>
