@@ -1,72 +1,143 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Pixi.js iOS Pseudo Fullscreen Gesture Demo</title>
-<style>
-  html, body {
-    margin:0;
-    padding:0;
-    width:100%;
-    height:100%;
-    overflow:hidden;
-    background:#555555;
-  }
-  body {
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    -webkit-user-select:none;
-    -webkit-touch-callout:none;
-    -webkit-tap-highlight-color:transparent;
-  }
-  #game-container { width:100%; height:100%; position:relative; }
-  #hint-hand {
-    position:absolute;
-    bottom:50px;
-    left:50%;
-    transform:translateX(-50%);
-    width:40px;
-    height:40px;
-    z-index:9999;
-    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" stroke="white" stroke-width="4" fill="none"/><line x1="32" y1="16" x2="32" y2="48" stroke="white" stroke-width="4"/></svg>') no-repeat center/contain;
-    animation: bounce 1s infinite;
-  }
-  @keyframes bounce {
-    0%,100% { transform: translateX(-50%) translateY(0); }
-    50% { transform: translateX(-50%) translateY(-10px); }
-  }
-  #infoText { position:absolute; top:20px; left:50%; transform:translateX(-50%); color:#00ff90; font-family:monospace; font-size:20px; text-align:center; z-index:9998; }
-</style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.2.4/pixi.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chili Strike – Safari Fullscreen Swipe</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            -webkit-text-size-adjust: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        #game-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: #1a001a; /* Фон як у грі */
+        }
+        #debug {
+            position: fixed;
+            top: 8px;
+            left: 8px;
+            background: rgba(0,0,0,0.6);
+            color: #0f0;
+            font: bold 12px monospace;
+            padding: 4px 8px;
+            border-radius: 6px;
+            z-index: 9999;
+            pointer-events: none;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            opacity: 0.8;
+        }
+    </style>
 </head>
 <body>
-<div id="game-container"></div>
-<div id="infoText">🪟 Actual game window size: 0 × 0</div>
-<div id="hint-hand"></div>
-<script>
-const app = new PIXI.Application({ width: window.innerWidth, height: window.innerHeight, backgroundColor:0x555555 });
-document.getElementById('game-container').appendChild(app.view);
 
-const infoText = document.getElementById('infoText');
-function resizeCanvas() {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  app.renderer.resize(w,h);
-  infoText.textContent = `🪟 Actual game window size: ${w} × ${h}`;
-}
-window.addEventListener('resize', resizeCanvas);
-window.addEventListener('orientationchange', resizeCanvas);
-window.addEventListener('load', resizeCanvas);
+    <canvas id="game-canvas"></canvas>
+    <div id="debug">Loading...</div>
 
-// Gesture hint: show hand animation and message
-const hintHand = document.getElementById('hint-hand');
-hintHand.addEventListener('touchstart', () => {
-  // Minimal scroll to encourage Safari to hide bars
-  window.scrollTo(0,1);
-  setTimeout(resizeCanvas,50);
-  // Hide hint after interaction
-  hintHand.style.display='none';
-});
-</script>
+    <script>
+        // === Тільки Safari iOS ===
+        const isSafariIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) &&
+                            /AppleWebKit/.test(navigator.userAgent) &&
+                            !/CriOS|FXIOS|EdgiOS/.test(navigator.userAgent);
+
+        if (!isSafariIOS) {
+            document.body.innerHTML = '<div style="color:#f66;padding:20px;">Тільки Safari iOS</div>';
+            throw '';
+        }
+
+        const canvas = document.getElementById('game-canvas');
+        const debug = document.getElementById('debug');
+        let startY = 0;
+        const SWIPE_UP_THRESHOLD = 60;
+
+        // === Оновлення розміру canvas + дебаг ===
+        function updateViewport() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+
+            debug.textContent = `${w}×${h}`;
+
+            canvas.width = w;
+            canvas.height = h;
+
+            // --- PIXI JS: оновлення renderer ---
+            if (window.gameApp) {
+                window.gameApp.renderer.resize(w, h);
+                if (window.gameApp.stage) {
+                    window.gameApp.stage.hitArea = new PIXI.Rectangle(0, 0, w, h);
+                }
+            }
+            // ----------------------------------
+
+            console.log('Viewport:', w, 'x', h);
+        }
+
+        // === Примусово ховаємо панелі Safari ===
+        function enterFullscreenMode() {
+            // 1. Прокрутка на 1px — ховає адресну панель
+            window.scrollTo(0, 1);
+
+            // 2. Додаємо "невидимий" скрол, щоб з’явилася нижня панель → потім ховаємо
+            if (!document.getElementById('scroll-hack')) {
+                const hack = document.createElement('div');
+                hack.id = 'scroll-hack';
+                hack.style.height = '1px';
+                hack.style.position = 'absolute';
+                hack.style.bottom = '0';
+                document.body.appendChild(hack);
+            }
+
+            // 3. Повторна прокрутка
+            setTimeout(() => window.scrollTo(0, 1), 50);
+
+            // 4. Оновлюємо розмір після ховання UI (400 мс — стандарт)
+            setTimeout(updateViewport, 400);
+        }
+
+        // === Обробка свайпу ===
+        function onTouchStart(e) {
+            startY = e.touches[0].clientY;
+        }
+
+        function onTouchEnd(e) {
+            if (!startY) return;
+            const endY = e.changedTouches[0].clientY;
+            const deltaY = startY - endY;
+
+            if (deltaY > SWIPE_UP_THRESHOLD) {
+                enterFullscreenMode();
+            }
+            startY = 0;
+        }
+
+        // === Ініціалізація ===
+        window.addEventListener('load', () => {
+            updateViewport();
+
+            // Touch для свайпу
+            document.addEventListener('touchstart', onTouchStart, { passive: true });
+            document.addEventListener('touchend', onTouchEnd, { passive: true });
+
+            // Оновлення при повороті / хованні панелей
+            window.addEventListener('resize', updateViewport);
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', updateViewport);
+            }
+
+            // Автоматичний вхід у fullscreen через 1 сек (як у грі)
+            setTimeout(enterFullscreenMode, 1000);
+        });
+
+        // === Глобальні функції для TypeScript ===
+        window.updateViewport = updateViewport;
+        window.enterFullscreenMode = enterFullscreenMode;
+    </script>
 </body>
 </html>
