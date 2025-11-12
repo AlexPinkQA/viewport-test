@@ -3,49 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chili Strike – Safari Fullscreen Swipe</title>
+    <title>Safari Fullscreen Swipe</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
             height: 100%;
-            overflow: hidden;
             background: #000;
+            font-family: -apple-system, sans-serif;
             -webkit-text-size-adjust: none;
-            -webkit-overflow-scrolling: touch;
         }
+
+        /* Контейнер для фейкового скролу */
+        #scroll-container {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            height: 100vh;
+        }
+
+        /* Вміст — трохи вищий за екран */
+        #content {
+            min-height: calc(100vh + 1px);
+            position: relative;
+            background: #1a001a;
+        }
+
         #game-canvas {
             width: 100%;
-            height: 100%;
+            height: 100vh;
             display: block;
-            background: #1a001a; /* Фон як у грі */
+            position: sticky;
+            top: 0;
         }
+
         #debug {
             position: fixed;
-            top: 8px;
-            left: 8px;
-            background: rgba(0,0,0,0.6);
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
             color: #0f0;
-            font: bold 12px monospace;
-            padding: 4px 8px;
-            border-radius: 6px;
+            font: bold 13px monospace;
+            padding: 6px 10px;
+            border-radius: 8px;
             z-index: 9999;
             pointer-events: none;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            opacity: 0.8;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
     </style>
 </head>
 <body>
 
-    <canvas id="game-canvas"></canvas>
-    <div id="debug">Loading...</div>
+    <div id="scroll-container">
+        <div id="content">
+            <canvas id="game-canvas"></canvas>
+            <div id="debug">Loading...</div>
+        </div>
+    </div>
 
     <script>
-        // === Тільки Safari iOS ===
+        // === ТІЛЬКИ Safari iOS ===
         const isSafariIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) &&
-                            /AppleWebKit/.test(navigator.userAgent) &&
-                            !/CriOS|FXIOS|EdgiOS/.test(navigator.userAgent);
+                            /WebKit/.test(navigator.userAgent) &&
+                            !/CriOS|FXIOS|Edg/.test(navigator.userAgent);
 
         if (!isSafariIOS) {
             document.body.innerHTML = '<div style="color:#f66;padding:20px;">Тільки Safari iOS</div>';
@@ -54,88 +75,76 @@
 
         const canvas = document.getElementById('game-canvas');
         const debug = document.getElementById('debug');
+        const scrollContainer = document.getElementById('scroll-container');
         let startY = 0;
-        const SWIPE_UP_THRESHOLD = 60;
+        const SWIPE_THRESHOLD = 50;
 
-        // === Оновлення розміру canvas + дебаг ===
+        // === Оновлення viewport + canvas ===
         function updateViewport() {
             const w = window.innerWidth;
             const h = window.innerHeight;
-
             debug.textContent = `${w}×${h}`;
 
             canvas.width = w;
             canvas.height = h;
 
-            // --- PIXI JS: оновлення renderer ---
+            // PIXI JS:
             if (window.gameApp) {
                 window.gameApp.renderer.resize(w, h);
-                if (window.gameApp.stage) {
-                    window.gameApp.stage.hitArea = new PIXI.Rectangle(0, 0, w, h);
-                }
-            }
-            // ----------------------------------
-
-            console.log('Viewport:', w, 'x', h);
-        }
-
-        // === Примусово ховаємо панелі Safari ===
-        function enterFullscreenMode() {
-            // 1. Прокрутка на 1px — ховає адресну панель
-            window.scrollTo(0, 1);
-
-            // 2. Додаємо "невидимий" скрол, щоб з’явилася нижня панель → потім ховаємо
-            if (!document.getElementById('scroll-hack')) {
-                const hack = document.createElement('div');
-                hack.id = 'scroll-hack';
-                hack.style.height = '1px';
-                hack.style.position = 'absolute';
-                hack.style.bottom = '0';
-                document.body.appendChild(hack);
             }
 
-            // 3. Повторна прокрутка
-            setTimeout(() => window.scrollTo(0, 1), 50);
-
-            // 4. Оновлюємо розмір після ховання UI (400 мс — стандарт)
-            setTimeout(updateViewport, 400);
+            console.log('Fullscreen:', w, 'x', h);
         }
 
-        // === Обробка свайпу ===
-        function onTouchStart(e) {
+        // === Свайп вгору → fullscreen ===
+        function handleTouchStart(e) {
             startY = e.touches[0].clientY;
         }
 
-        function onTouchEnd(e) {
+        function handleTouchEnd(e) {
             if (!startY) return;
             const endY = e.changedTouches[0].clientY;
-            const deltaY = startY - endY;
+            const delta = startY - endY;
 
-            if (deltaY > SWIPE_UP_THRESHOLD) {
+            if (delta > SWIPE_THRESHOLD) {
+                // Свайп вгору → активуємо fullscreen
                 enterFullscreenMode();
             }
             startY = 0;
+        }
+
+        function enterFullscreenMode() {
+            // Прокручуємо вниз на 1px → Safari ховає панелі
+            scrollContainer.scrollTop = 1;
+
+            // Через 100 мс — повертаємо на 0 (щоб не було видно)
+            setTimeout(() => {
+                scrollContainer.scrollTop = 0;
+            }, 100);
+
+            // Оновлюємо розмір після ховання UI
+            setTimeout(updateViewport, 500);
         }
 
         // === Ініціалізація ===
         window.addEventListener('load', () => {
             updateViewport();
 
-            // Touch для свайпу
-            document.addEventListener('touchstart', onTouchStart, { passive: true });
-            document.addEventListener('touchend', onTouchEnd, { passive: true });
+            // Свайп
+            document.addEventListener('touchstart', handleTouchStart, { passive: true });
+            document.addEventListener('touchend', handleTouchEnd, { passive: true });
 
-            // Оновлення при повороті / хованні панелей
+            // При зміні розміру (ховання панелей)
             window.addEventListener('resize', updateViewport);
             if (window.visualViewport) {
                 window.visualViewport.addEventListener('resize', updateViewport);
             }
 
-            // Автоматичний вхід у fullscreen через 1 сек (як у грі)
+            // Авто-фулскрін через 1 сек
             setTimeout(enterFullscreenMode, 1000);
         });
 
-        // === Глобальні функції для TypeScript ===
+        // Глобальні функції
         window.updateViewport = updateViewport;
         window.enterFullscreenMode = enterFullscreenMode;
     </script>
