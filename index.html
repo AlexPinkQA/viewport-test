@@ -3,184 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Гра для Safari iOS – свайп + viewport</title>
+    <title>Viewport + Safari Fullscreen Swipe</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
             height: 100%;
-            overflow: hidden; /* Важливо для гри */
-            -webkit-overflow-scrolling: touch;
-        }
-        body {
-            display: flex;
-            flex-direction: column;
-            font-family: -apple-system, sans-serif;
-            background: #000;
-            color: white;
-        }
-
-        header {
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            text-align: center;
-            transition: padding 0.3s ease;
-            z-index: 10;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-        .shrunk {
-            padding: 8px !important;
-            font-size: 0.9em;
-        }
-
-        #game-container {
-            flex: 1;
-            position: relative;
             overflow: hidden;
+            -webkit-overflow-scrolling: touch;
+            background: #111;
+            color: #0f0;
+            font-family: -apple-system, monospace;
         }
-        #game-canvas {
+        #canvas {
             width: 100%;
             height: 100%;
+            background: #000;
             display: block;
         }
-
-        footer {
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px;
-            text-align: center;
-            transition: all 0.3s ease;
-            z-index: 10;
+        #info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 100;
+            pointer-events: none;
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
         }
-        .hidden {
-            opacity: 0;
-            transform: translateY(100%);
-            pointer-events: none;
-        }
-
-        /* Примусово ховаємо скролбар, але дозволяємо touch */
-        ::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
 
-    <header id="header">Ваша гра</header>
-    <div id="game-container">
-        <canvas id="game-canvas"></canvas>
-    </div>
-    <footer id="footer">Footer – сховати при свайпі вгору</footer>
+    <canvas id="canvas"></canvas>
+    <div id="info">Очікування...</div>
 
     <script>
-        // === Детекція Safari на iOS ===
-        const isSafariiOS = () => {
-            return /iPhone|iPad|iPod/.test(navigator.userAgent) &&
-                   /WebKit/.test(navigator.userAgent) &&
-                   !/CriOS/.test(navigator.userAgent) && // не Chrome
-                   !/FXIOS/.test(navigator.userAgent);  // не Firefox
-        };
+        // === Детекція Safari iOS ===
+        const isSafariIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) &&
+                            /WebKit/.test(navigator.userAgent) &&
+                            !/CriOS/.test(navigator.userAgent) &&
+                            !/FXIOS/.test(navigator.userAgent);
 
-        if (!isSafariiOS()) {
-            document.body.innerHTML = '<div style="padding:20px;color:red;">Ця сторінка оптимізована лише для Safari на iPhone/iPad</div>';
+        if (!isSafariIOS) {
+            document.body.innerHTML = '<div style="color:red;padding:20px;">Ця сторінка — ТІЛЬКИ для Safari на iPhone/iPad</div>';
+            throw new Error("Not Safari iOS");
         }
 
-        // === Елементи ===
-        const header = document.getElementById('header');
-        const footer = document.getElementById('footer');
-        const canvas = document.getElementById('game-canvas');
-        const container = document.getElementById('game-container');
-
+        const canvas = document.getElementById('canvas');
+        const info = document.getElementById('info');
         let startY = 0;
-        let isHidden = false;
-        const SWIPE_THRESHOLD = 60; // пікселів
+        const SWIPE_THRESHOLD = 50;
 
-        // === Вимірювання viewport (оновлюємо Pixi canvas) ===
+        // === Оновлення viewport + canvas ===
         function updateViewport() {
-            const width = window.innerWidth;
-            const height = window.innerHeight;
+            const w = window.innerWidth;
+            const h = window.innerHeight;
 
-            console.log('Viewport:', width, 'x', height);
+            info.textContent = `${w} × ${h}`;
 
-            // Тут підключіть ваш PixiJS renderer
-            // Приклад:
-            // if (window.gameApp) {
-            //     window.gameApp.renderer.resize(width, height);
-            //     window.gameApp.stage.hitArea = new PIXI.Rectangle(0, 0, width, height);
-            // }
+            // Для PixiJS: оновлюємо renderer
+            // if (window.gameApp) gameApp.renderer.resize(w, h);
 
-            // Оновлюємо розмір canvas
-            canvas.width = width;
-            canvas.height = height;
-            canvas.style.width = width + 'px';
-            canvas.style.height = height + 'px';
+            canvas.width = w;
+            canvas.height = h;
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
 
-            return { width, height };
+            console.log('Viewport updated:', w, 'x', h);
         }
 
-        // === Свайп обробка ===
+        // === Свайп для активації fullscreen в Safari ===
         function handleTouchStart(e) {
             startY = e.touches[0].clientY;
         }
 
         function handleTouchEnd(e) {
             if (!startY) return;
-
             const endY = e.changedTouches[0].clientY;
             const diff = startY - endY; // > 0 = вгору
 
-            if (Math.abs(diff) > SWIPE_THRESHOLD) {
-                if (diff > 0 && !isHidden) {
-                    // Свайп вгору → ховаємо
-                    hideUI();
-                } else if (diff < 0 && isHidden) {
-                    // Свайп вниз → показуємо назад
-                    showUI();
-                }
+            if (diff > SWIPE_THRESHOLD) {
+                // Свайп вгору → ховаємо UI Safari
+                triggerSafariFullscreen();
             }
-
             startY = 0;
         }
 
-        function hideUI() {
-            isHidden = true;
-            footer.classList.add('hidden');
-            header.classList.add('shrunk');
+        function triggerSafariFullscreen() {
+            // 1. Прокручуємо на 1px — Safari ховає панелі
+            window.scrollTo(0, 1);
 
-            // Примусово "прокручуємо" на 1px, щоб Safari сховав адресну панель
-            setTimeout(() => {
-                window.scrollTo(0, 1);
-            }, 100);
+            // 2. Додаємо штучний "контейнер" для скролу
+            if (!document.getElementById('scroll-trick')) {
+                const div = document.createElement('div');
+                div.id = 'scroll-trick';
+                div.style.height = '1px';
+                document.body.appendChild(div);
+            }
 
-            setTimeout(updateViewport, 300); // після анімації
-        }
+            // 3. Примусово скролимо ще раз після затримки
+            setTimeout(() => window.scrollTo(0, 1), 100);
 
-        function showUI() {
-            isHidden = false;
-            footer.classList.remove('hidden');
-            header.classList.remove('shrunk');
-            setTimeout(updateViewport, 300);
+            // 4. Оновлюємо viewport після ховання панелей
+            setTimeout(updateViewport, 400);
         }
 
         // === Ініціалізація ===
         window.addEventListener('load', () => {
             updateViewport();
 
-            // Додаємо touch події тільки на контейнері гри (або на body)
+            // Touch події
             document.addEventListener('touchstart', handleTouchStart, { passive: true });
             document.addEventListener('touchend', handleTouchEnd, { passive: true });
 
-            // Оновлюємо при зміні орієнтації / хованні панелі
+            // Оновлення при зміні (поворот, ховання панелі)
             window.addEventListener('resize', updateViewport);
-            window.visualViewport?.addEventListener('resize', updateViewport);
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', updateViewport);
+            }
 
-            // Додатково: примусово ховаємо UI Safari
-            setTimeout(() => window.scrollTo(0, 1), 500);
+            // Автоматично ховаємо UI при старті (опціонально)
+            setTimeout(triggerSafariFullscreen, 800);
         });
 
-        // === Глобальний доступ для TypeScript/PixiJS ===
-        window.updateGameViewport = updateViewport;
-        window.hideGameUI = hideUI;
-        window.showGameUI = showUI;
+        // === Глобальні функції для TypeScript / PixiJS ===
+        window.updateViewport = updateViewport;
+        window.triggerSafariFullscreen = triggerSafariFullscreen;
     </script>
 </body>
 </html>
