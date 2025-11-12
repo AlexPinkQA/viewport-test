@@ -9,7 +9,7 @@
       margin: 0;
       padding: 0;
       width: 100vw;
-      height: 100vh;
+      height: 100%;
       overflow: hidden;
       background: #555555;
     }
@@ -19,6 +19,9 @@
       -webkit-tap-highlight-color: transparent;
     }
     #game-container {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
     }
@@ -37,7 +40,7 @@
     });
     document.getElementById('game-container').appendChild(app.view);
 
-    // Text for displaying Actual game window size
+    // Create info text
     const infoText = new PIXI.Text(`🪟 Actual game window size: ${window.innerWidth} × ${window.innerHeight}`, {
       fontFamily: 'monospace',
       fontSize: 24,
@@ -45,22 +48,28 @@
       align: 'center',
     });
     infoText.anchor.set(0.5, 0);
-    infoText.x = app.screen.width / 2;
+    infoText.x = window.innerWidth / 2;
     infoText.y = 20;
     app.stage.addChild(infoText);
 
-    // Resize handler for pseudo fullscreen effect
-    function resize() {
-      app.renderer.resize(window.innerWidth, window.innerHeight);
-      infoText.text = `🪟 Actual game window size: ${window.innerWidth} × ${window.innerHeight}`;
-      infoText.x = app.screen.width / 2;
+    // Function to resize canvas dynamically
+    function resizeCanvas() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      app.renderer.resize(w, h);
+      infoText.text = `🪟 Actual game window size: ${w} × ${h}`;
+      infoText.x = w / 2;
     }
 
-    window.addEventListener('resize', resize);
-    window.addEventListener('orientationchange', resize);
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('orientationchange', resizeCanvas);
 
-    // Optional: scroll slightly to trigger iOS pseudo fullscreen gesture UI
-    window.addEventListener('load', () => setTimeout(() => window.scrollTo(0,1), 100));
+    // Initial resize on load
+    window.addEventListener('load', () => {
+      resizeCanvas();
+      // Optional: small scroll to trigger Safari pseudo fullscreen gesture
+      setTimeout(() => window.scrollTo(0, 1), 100);
+    });
   </script>
 </body>
 </html>
