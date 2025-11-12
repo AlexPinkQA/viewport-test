@@ -3,150 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Safari Fullscreen Swipe</title>
+    <title>Safari Fullscreen Swipe Test</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
             height: 100%;
+            overflow: hidden;
             background: #000;
             font-family: -apple-system, sans-serif;
             -webkit-text-size-adjust: none;
         }
-
-        /* Контейнер для фейкового скролу */
-        #scroll-container {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            height: 100vh;
-        }
-
-        /* Вміст — трохи вищий за екран */
-        #content {
-            min-height: calc(100vh + 1px);
-            position: relative;
-            background: #1a001a;
-        }
-
-        #game-canvas {
+        #canvas {
             width: 100%;
-            height: 100vh;
+            height: 100%;
+            background: #1a001a;
             display: block;
-            position: sticky;
-            top: 0;
         }
-
-        #debug {
+        #size {
             position: fixed;
             top: 10px;
             left: 10px;
-            background: rgba(0,0,0,0.7);
             color: #0f0;
-            font: bold 13px monospace;
+            background: rgba(0,0,0,0.7);
             padding: 6px 10px;
-            border-radius: 8px;
+            font: bold 13px monospace;
+            border-radius: 6px;
             z-index: 9999;
             pointer-events: none;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(8px);
         }
     </style>
 </head>
 <body>
 
-    <div id="scroll-container">
-        <div id="content">
-            <canvas id="game-canvas"></canvas>
-            <div id="debug">Loading...</div>
-        </div>
-    </div>
+    <div id="canvas"></div>
+    <div id="size">— × —</div>
 
     <script>
-        // === ТІЛЬКИ Safari iOS ===
+        // Перевірка: тільки Safari iOS
         const isSafariIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) &&
-                            /WebKit/.test(navigator.userAgent) &&
-                            !/CriOS|FXIOS|Edg/.test(navigator.userAgent);
+                            /AppleWebKit/.test(navigator.userAgent) &&
+                            !/CriOS|FXIOS|EdgiOS/.test(navigator.userAgent);
 
         if (!isSafariIOS) {
-            document.body.innerHTML = '<div style="color:#f66;padding:20px;">Тільки Safari iOS</div>';
+            document.body.innerHTML = '<div style="color:#f66;padding:20px;">ТІЛЬКИ SAFARI iOS</div>';
             throw '';
         }
 
-        const canvas = document.getElementById('game-canvas');
-        const debug = document.getElementById('debug');
-        const scrollContainer = document.getElementById('scroll-container');
+        const sizeEl = document.getElementById('size');
         let startY = 0;
-        const SWIPE_THRESHOLD = 50;
+        const SWIPE_THRESHOLD = 70; // пікселів вгору
 
-        // === Оновлення viewport + canvas ===
-        function updateViewport() {
+        // Оновлення розміру viewport
+        function updateSize() {
             const w = window.innerWidth;
             const h = window.innerHeight;
-            debug.textContent = `${w}×${h}`;
-
-            canvas.width = w;
-            canvas.height = h;
-
-            // PIXI JS:
-            if (window.gameApp) {
-                window.gameApp.renderer.resize(w, h);
-            }
-
-            console.log('Fullscreen:', w, 'x', h);
+            sizeEl.textContent = `${w} × ${h}`;
+            console.log('Viewport:', w, 'x', h);
         }
 
-        // === Свайп вгору → fullscreen ===
-        function handleTouchStart(e) {
+        // Примусово ховаємо панелі Safari
+        function hideSafariUI() {
+            // 1. Прокрутка на 1px — ховає верхню адресу
+            window.scrollTo(0, 1);
+
+            // 2. Додаємо "приманку" для скролу
+            if (!document.getElementById('scroll-hack')) {
+                const hack = document.createElement('div');
+                hack.id = 'scroll-hack';
+                hack.style.cssText = 'position:absolute;bottom:0;height:1px;width:100%;pointer-events:none;';
+                document.body.appendChild(hack);
+            }
+
+            // 3. Повторна прокрутка
+            setTimeout(() => window.scrollTo(0, 1), 50);
+
+            // 4. Оновлюємо розмір після ховання (400 мс — стандарт)
+            setTimeout(updateSize, 400);
+        }
+
+        // Свайп вгору
+        function onTouchStart(e) {
             startY = e.touches[0].clientY;
         }
 
-        function handleTouchEnd(e) {
+        function onTouchEnd(e) {
             if (!startY) return;
             const endY = e.changedTouches[0].clientY;
             const delta = startY - endY;
 
             if (delta > SWIPE_THRESHOLD) {
-                // Свайп вгору → активуємо fullscreen
-                enterFullscreenMode();
+                hideSafariUI();
             }
             startY = 0;
         }
 
-        function enterFullscreenMode() {
-            // Прокручуємо вниз на 1px → Safari ховає панелі
-            scrollContainer.scrollTop = 1;
-
-            // Через 100 мс — повертаємо на 0 (щоб не було видно)
-            setTimeout(() => {
-                scrollContainer.scrollTop = 0;
-            }, 100);
-
-            // Оновлюємо розмір після ховання UI
-            setTimeout(updateViewport, 500);
-        }
-
-        // === Ініціалізація ===
+        // Ініціалізація
         window.addEventListener('load', () => {
-            updateViewport();
+            updateSize();
 
-            // Свайп
-            document.addEventListener('touchstart', handleTouchStart, { passive: true });
-            document.addEventListener('touchend', handleTouchEnd, { passive: true });
+            // Touch події
+            document.addEventListener('touchstart', onTouchStart, { passive: true });
+            document.addEventListener('touchend', onTouchEnd, { passive: true });
 
-            // При зміні розміру (ховання панелей)
-            window.addEventListener('resize', updateViewport);
+            // Оновлення при повороті / хованні панелей
+            window.addEventListener('resize', updateSize);
             if (window.visualViewport) {
-                window.visualViewport.addEventListener('resize', updateViewport);
+                window.visualViewport.addEventListener('resize', updateSize);
             }
 
-            // Авто-фулскрін через 1 сек
-            setTimeout(enterFullscreenMode, 1000);
+            // Автоматичний режим через 1.5 сек (для тесту)
+            setTimeout(hideSafariUI, 1500);
         });
-
-        // Глобальні функції
-        window.updateViewport = updateViewport;
-        window.enterFullscreenMode = enterFullscreenMode;
     </script>
 </body>
 </html>
