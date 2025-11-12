@@ -3,38 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Pixi Pseudo Fullscreen Viewport</title>
+  <title>Pixi.js Pseudo Fullscreen Demo</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      height: 100vh;
       width: 100vw;
+      height: 100vh;
       overflow: hidden;
       background: #555555;
+    }
+    body {
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
     }
     #game-container {
       width: 100%;
       height: 100%;
     }
   </style>
-  <!-- Pixi.js CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.2.4/pixi.min.js"></script>
 </head>
 <body>
   <div id="game-container"></div>
 
   <script>
-    // Create Pixi application
+    // Create Pixi Application
     const app = new PIXI.Application({
       width: window.innerWidth,
       height: window.innerHeight,
       backgroundColor: 0x555555,
     });
-
     document.getElementById('game-container').appendChild(app.view);
 
-    // Create a text object
+    // Text for displaying Actual game window size
     const infoText = new PIXI.Text(`🪟 Actual game window size: ${window.innerWidth} × ${window.innerHeight}`, {
       fontFamily: 'monospace',
       fontSize: 24,
@@ -46,7 +49,7 @@
     infoText.y = 20;
     app.stage.addChild(infoText);
 
-    // Resize function to maintain pseudo fullscreen
+    // Resize handler for pseudo fullscreen effect
     function resize() {
       app.renderer.resize(window.innerWidth, window.innerHeight);
       infoText.text = `🪟 Actual game window size: ${window.innerWidth} × ${window.innerHeight}`;
@@ -55,6 +58,9 @@
 
     window.addEventListener('resize', resize);
     window.addEventListener('orientationchange', resize);
+
+    // Optional: scroll slightly to trigger iOS pseudo fullscreen gesture UI
+    window.addEventListener('load', () => setTimeout(() => window.scrollTo(0,1), 100));
   </script>
 </body>
 </html>
