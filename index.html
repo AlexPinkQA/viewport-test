@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- Meta tag for full viewport including iPhone notch areas -->
+  <!-- Viewport for pseudo fullscreen on iOS Safari -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Viewport Testing - Game Window</title>
   <style>
@@ -12,7 +12,7 @@
       background: #555555; /* gray background */
       font-family: monospace;
       font-size: 14px;
-      height: 100vh; /* full viewport height */
+      height: 100vh;
       width: 100vw;
       overflow: hidden; /* hide scrollbars */
       -webkit-touch-callout: none;
@@ -47,13 +47,13 @@
       console.log(gameWindowSize);
     }
 
-    // Update on resize
+    // Update info on resize
     window.addEventListener('resize', updateViewportInfo);
 
-    // Trigger once on load
+    // Initial update on page load
     updateViewportInfo();
 
-    // Optional: attempt to hide Safari nav/footer with a small scroll
+    // Pseudo fullscreen trigger: scroll slightly to hide Safari nav/footer
     window.addEventListener('load', () => setTimeout(() => window.scrollTo(0, 1), 100));
   </script>
 </body>
