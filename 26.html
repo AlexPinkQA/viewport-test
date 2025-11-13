@@ -2,27 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- Meta tag for full viewport including iPhone notch areas -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Viewport Testing - Game Window</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      background: #555555; /* gray background */
+      background: #555555;
       font-family: monospace;
       font-size: 14px;
-      height: 100vh; /* full viewport height */
-      width: 100vw;
-      overflow: hidden; /* hide scrollbars */
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      -webkit-tap-highlight-color: transparent;
+      height: 100%;
+      overflow: hidden;
+      position: relative; /* Для позиціонування рамки */
+    }
+
+    /* ЧЕРВОНА РАМКА ПО ПЕРИМЕТРУ VIEWPORT */
+    .viewport-border {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border: 4px solid red;
+      pointer-events: none; /* Не блокує кліки */
+      z-index: 9998;
+      box-sizing: border-box;
     }
 
     .info-box {
       position: fixed;
-      top: env(safe-area-inset-top, 10px);
+      top: 10px;
       left: 10px;
       right: 10px;
       background: rgba(0, 0, 0, 0.75);
@@ -31,30 +40,32 @@
       padding: 12px;
       white-space: pre-wrap;
       z-index: 9999;
-      color: #00ff90; /* green text */
-      text-align: center;
+      color: #00ff90;
     }
   </style>
 </head>
 <body>
+
+  <!-- ЧЕРВОНА РАМКА -->
+  <div class="viewport-border"></div>
+
+  <!-- Інформація про viewport -->
   <pre id="viewport-info" class="info-box">Loading viewport info...</pre>
 
   <script>
     function updateViewportInfo() {
-      const gameWindowSize = `🪟  Actual game window size (put this in DevTools): ${window.innerWidth} × ${window.innerHeight}`;
+      const gameWindowSize = `Actual game window size (put this in DevTools): ${window.innerWidth} × ${window.innerHeight}`;
       document.getElementById('viewport-info').textContent = gameWindowSize;
       console.clear();
       console.log(gameWindowSize);
     }
 
-    // Update on resize
+    // Оновлюємо при зміні розміру
     window.addEventListener('resize', updateViewportInfo);
+    window.addEventListener('orientationchange', updateViewportInfo);
 
-    // Trigger once on load
+    // Початкове оновлення
     updateViewportInfo();
-
-    // Optional: attempt to hide Safari nav/footer with a small scroll
-    window.addEventListener('load', () => setTimeout(() => window.scrollTo(0, 1), 100));
   </script>
 </body>
 </html>
