@@ -1,136 +1,93 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="en">
+
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no, shrink-to-fit=no">
-    <title>iOS Canvas Test – FULLSCREEN</title>
-    <style>
-        html, body { margin:0; height:100%; background:#000; color:#fff; }
-        html { -webkit-text-size-adjust: 100% !important; }
-        .wrap { width:100vw; height:100dvh; }
-        @supports not (height: 100dvh) { .wrap { height:100vh; } }
-        body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
-        canvas { display:block; width:100%; height:100%; }
 
-        /* НЕВИДИМИЙ ХАК ДЛЯ СКРОЛУ */
-        #scroll-hack {
-            position: fixed; top: 0; left: 0;
-            width: 1px; height: 200dvh;
-            overflow-y: auto; -webkit-overflow-scrolling: touch;
-            opacity: 0; pointer-events: none; z-index: -1;
-        }
+  <meta charset="UTF-8" />
 
-        .hud { position:fixed; left:8px; top:8px; font:12px/1.2 system-ui; opacity:.8; background:rgba(0,0,0,0.6); padding:8px; border-radius:8px; }
-    </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Viewport Testing - Game Window</title>
+
+  <style>
+
+    html, body {
+
+      margin: 0;
+
+      padding: 0;
+
+      background: #555555; /* changed to gray */
+
+      font-family: monospace;
+
+      font-size: 14px;
+
+      height: 100%;
+
+      overflow: hidden;
+
+    }
+
+    .info-box {
+
+      position: fixed;
+
+      top: 10px;
+
+      left: 10px;
+
+      right: 10px;
+
+      background: rgba(0, 0, 0, 0.75);
+
+      border: 1px solid #00ff90;
+
+      border-radius: 12px;
+
+      padding: 12px;
+
+      white-space: pre-wrap;
+
+      z-index: 9999;
+
+      color: #00ff90; /* green */
+
+    }
+
+  </style>
+
 </head>
+
 <body>
 
-<!-- ХАК -->
-<div id="scroll-hack"></div>
+  <pre id="viewport-info" class="info-box">Loading viewport info...</pre>
 
-<div class="wrap">
-    <canvas id="c"></canvas>
-</div>
-<pre class="hud" id="hud"></pre>
 
-<script>
-    (function(){
-        const canvas = document.getElementById('c');
-        const hud = document.getElementById('hud');
-        const scrollHack = document.getElementById('scroll-hack');
-        let startY = 0;
 
-        function log() {
-            const vv = window.visualViewport;
-            const r = canvas.getBoundingClientRect();
-            hud.textContent =
-                `inner: ${innerWidth}×${innerHeight}\n` +
-                `vv: ${vv?.width.toFixed(1)}×${vv?.height.toFixed(1)} @ scale ${vv?.scale?.toFixed(3)}\n` +
-                `rect: ${r.width.toFixed(1)}×${r.height.toFixed(1)}\n` +
-                `css: ${canvas.clientWidth}×${canvas.clientHeight}\n` +
-                `dpr: ${devicePixelRatio}`;
-        }
+  <script>
 
-        function sizeCanvas() {
-            const cssW = canvas.clientWidth;
-            const cssH = canvas.clientHeight;
-            const dpr = window.devicePixelRatio || 1;
-            const vv = window.visualViewport;
-            const pr = Math.min(dpr * (vv ? 1 / vv.scale : 1), 3);
-            const w = Math.round(cssW * pr);
-            const h = Math.round(cssH * pr);
-            if (canvas.width !== w || canvas.height !== h) {
-                canvas.width = w;
-                canvas.height = h;
-                const ctx = canvas.getContext('2d');
-                ctx.setTransform(pr, 0, 0, pr, 0, 0);
-                draw(ctx, cssW, cssH);
-            }
-            log();
-        }
+    function updateViewportInfo() {
 
-        function draw(ctx, w, h) {
-            ctx.clearRect(0,0,w,h);
-            const grad = ctx.createLinearGradient(0,0,w,h);
-            grad.addColorStop(0,'#0ff'); grad.addColorStop(1,'#f0f');
-            ctx.fillStyle = grad; ctx.fillRect(0,0,w,h);
-            ctx.fillStyle = '#111'; ctx.fillRect(10,10, w-20, 60);
-            ctx.fillStyle = '#fff'; ctx.font = '24px system-ui';
-            ctx.fillText(`Canvas CSS: ${Math.round(w)}×${Math.round(h)}`, 20, 50);
-        }
+      const gameWindowSize = `🪟  Actual game window size (put this in DevTools): ${window.innerWidth} × ${window.innerHeight}`;
 
-        function settle(fn){ requestAnimationFrame(()=>requestAnimationFrame(fn)); }
-        const onChange = () => settle(sizeCanvas);
-        window.addEventListener('resize', onChange);
-        window.addEventListener('orientationchange', onChange);
-        window.visualViewport && window.visualViewport.addEventListener('resize', onChange);
-        document.addEventListener('visibilitychange', onChange);
+      document.getElementById('viewport-info').textContent = gameWindowSize;
 
-        // === ХОВАННЯ ПАНЕЛЕЙ ===
-        function hideBars() {
-            scrollHack.scrollTop = 1;
-            setTimeout(() => {
-                scrollHack.scrollTop = 1;
-                setTimeout(sizeCanvas, 600);
-            }, 100);
-        }
+      console.clear();
 
-        // === СВАЙП ВГОРУ ===
-        document.addEventListener('touchstart', e => {
-            startY = e.touches[0].clientY;
-            e.preventDefault();
-        }, { passive: false });
+      console.log(gameWindowSize);
 
-        document.addEventListener('touchmove', e => {
-            if (!startY) return;
-            const delta = startY - e.touches[0].clientY;
-            if (delta > 60) {
-                hideBars();
-                startY = 0;
-            }
-            e.preventDefault();
-        }, { passive: false });
+    }
 
-        // === СТАРТ ===
-        onChange();
-        setTimeout(hideBars, 1500);
 
-        // Chrome iOS fix
-        if (/CriOS\/\d+/.test(navigator.userAgent)) {
-            window.addEventListener('load', () => {
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        window.scrollTo(0, 0);
-                        sizeCanvas();
-                    });
-                });
-            });
-        }
 
-        // Авто-ховання при першому тапі
-        window.addEventListener('pointerdown', hideBars, { once: true });
-    })();
-</script>
+    window.addEventListener('resize', updateViewportInfo);
+
+    updateViewportInfo();
+
+  </script>
+
 </body>
+
 </html>
