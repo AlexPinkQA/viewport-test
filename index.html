@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Safari Fullscreen – Swipe Up</title>
+    <title>Safari Fullscreen – Swipe Up (Fixed)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
-            height: 100dvh;
+            height: 100svh; /* Small viewport — для iOS 18+ */
             overflow: hidden;
             background: #000;
             -webkit-user-select: none;
-            -webkit-touch-callout: none;
+            position: relative; /* Фікс для touch */
         }
         #canvas {
             width: 100%;
@@ -23,10 +23,10 @@
             position: fixed;
             top: 10px;
             left: 10px;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.8);
             color: #0f0;
             font: bold 14px monospace;
-            padding: 6px 10px;
+            padding: 8px 12px;
             border-radius: 8px;
             z-index: 9999;
             pointer-events: none;
@@ -37,28 +37,36 @@
 <body>
 
 <canvas id="canvas"></canvas>
-<div id="debug">?</div>
+<div id="debug">Tap & Swipe Up to Fullscreen</div>
 
 <script>
     const debug = document.getElementById('debug');
     let startY = 0;
-    const THRESHOLD = 60;
+    let isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
+    
+    if (!isIOS) {
+        debug.textContent = 'Тільки Safari iOS! Використовуй iPhone Safari.';
+        throw 'Not iOS Safari';
+    }
 
     function update() {
         const w = window.innerWidth;
         const h = window.innerHeight;
-        debug.textContent = `${w}×${h}`;
+        debug.textContent = `Viewport: ${w}×${h} | Swipe Up!`;
+        console.log('Viewport updated:', w, 'x', h); // Лог у консоль
     }
 
-    function hideSafariBars() {
+    function hideBars() {
+        console.log('Hiding Safari bars...'); // Лог
         window.scrollTo(0, 1);
         setTimeout(() => window.scrollTo(0, 1), 100);
         setTimeout(update, 500);
     }
 
-    // КЛЮЧ: touchmove + preventDefault
+    // Touch з логами
     document.addEventListener('touchstart', (e) => {
         startY = e.touches[0].clientY;
+        console.log('Touch start:', startY); // Лог
         e.preventDefault();
     }, { passive: false });
 
@@ -66,19 +74,23 @@
         if (!startY) return;
         const currentY = e.touches[0].clientY;
         const delta = startY - currentY;
-        if (delta > THRESHOLD) {
-            hideSafariBars();
+        console.log('Touch move delta:', delta); // Лог
+        if (delta > 30) { // Знижений поріг
+            hideBars();
             startY = 0;
         }
+        e.preventDefault();
     }, { passive: false });
 
+    // Ініціалізація
     window.addEventListener('load', () => {
         update();
         window.addEventListener('resize', update);
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', update);
         }
-        setTimeout(hideSafariBars, 1000);
+        setTimeout(hideBars, 1500); // Збільшена затримка
+        console.log('Page loaded — ready for swipe!'); // Лог
     });
 </script>
 
