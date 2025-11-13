@@ -1,55 +1,6 @@
 <script>
-  function detectFramework() {
-    const log = console.log; // Логуватимемо в консоль
-    const results = [];
-
-    // 1. Cordova (PhoneGap/Ionic Cordova)
-    if (typeof cordova !== 'undefined' || window.PhoneGap || window.phonegap) {
-      results.push('Cordova/PhoneGap виявлено! (window.cordova існує)');
-    }
-
-    // 2. Capacitor (Ionic Capacitor)
-    if (window.Capacitor || window.capacitor) {
-      results.push('Capacitor виявлено! (window.Capacitor існує)');
-    }
-    if (window.Capacitor?.isNativePlatform()) {
-      results.push('Capacitor: Запуск у нативному app (не в браузері)');
-    }
-
-    // 3. WKWebView (нативний iOS WebView)
-    if (window.webkit && window.webkit.messageHandlers) {
-      results.push('WKWebView виявлено! (Є messageHandlers для JS-native bridge)');
-      // Перевіряємо, чи є handler для ховання панелей
-      if (window.webkit.messageHandlers.hideToolbar || window.webkit.messageHandlers.fullscreen) {
-        results.push('WKWebView: Знайдено handler для ховання панелей (hideToolbar/fullscreen)');
-      }
-    }
-
-    // 4. Загальний WebView (iOS/Android)
-    if (navigator.userAgent.includes('WebView') || navigator.platform === 'iPhone' && !window.navigator.standalone) {
-      results.push('Ймовірно WebView (за userAgent)');
-    }
-
-    // 5. PWA (якщо додано на екран)
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      results.push('PWA-режим (standalone, без панелей Safari)');
-    }
-
-    // 6. Звичайний Safari
-    if (!window.Capacitor && !cordova && !window.webkit.messageHandlers && navigator.userAgent.includes('Safari')) {
-      results.push('Звичайний Safari (без фреймворку)');
-    }
-
-    // Виводимо результати
-    if (results.length > 0) {
-      log('=== ДЕТЕКТОР ФРЕЙМВОРКУ ===');
-      results.forEach(r => log(r));
-      log('UserAgent повний:', navigator.userAgent);
-    } else {
-      log('Фреймворк не виявлено. Можливо кастомний WebView.');
-    }
-  }
-
-  // Запускаємо при завантаженні
-  window.addEventListener('load', detectFramework);
+  console.log('UserAgent:', navigator.userAgent);
+  console.log('webkit.messageHandlers?', !!window.webkit?.messageHandlers);
+  console.log('Capacitor?', !!window.Capacitor);
+  console.log('Cordova?', typeof cordova !== 'undefined');
 </script>
