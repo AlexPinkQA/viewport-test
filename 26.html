@@ -3,18 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>Chili Slots – Fullscreen</title>
+  <title>Slots – FULLSCREEN</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     html, body { height:100dvh; overflow:hidden; background:#000; }
-    #game-container {
-      position:fixed; top:0; left:0; right:0; bottom:0;
-      overflow-y:auto; -webkit-overflow-scrolling:touch;
-      scroll-snap-type:y mandatory; scroll-behavior:smooth;
+    
+    /* КЛЮЧ: Контейнер з overflow */
+    #scroll-wrapper {
+      height: 200dvh; /* 2x висота — обов'язково! */
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
     }
-    #game { height:100dvh; scroll-snap-align:start; position:relative; }
+    
+    #game {
+      height: 100dvh;
+      scroll-snap-align: start;
+      background: #1a001a;
+      position: relative;
+    }
+    
     canvas { display:block; width:100%; height:100%; }
+    
     #debug {
       position:fixed; top:10px; left:10px; z-index:9999;
       background:rgba(0,0,0,0.7); color:#0f0; padding:8px 12px;
@@ -25,56 +38,59 @@
 </head>
 <body>
 
-<div id="game-container">
+<div id="scroll-wrapper">
   <div id="game">
     <canvas id="pixi-canvas"></canvas>
     <div id="debug">Swipe UP</div>
   </div>
 </div>
 
-<!-- PixiJS 6.5.6 -->
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@6.5.6/dist/browser/pixi.min.js"></script>
 
 <script type="module">
-  import { Application, Sprite, Texture } from 'pixi.js';
-
   const debug = document.getElementById('debug');
-  const container = document.getElementById('game-container');
+  const wrapper = document.getElementById('scroll-wrapper');
   let startY = 0;
-  // === PixiJS App ===
-  const app = new Application({
+
+  // === PixiJS ===
+  const app = new PIXI.Application({
     view: document.getElementById('pixi-canvas'),
     width: window.innerWidth,
     height: window.innerHeight,
     backgroundColor: 0x1a001a,
     antialias: true,
-    resolution: window.devicePixelRatio || 1,
+    resolution: window.devicePixelRatio,
     autoDensity: true,
   });
 
-  // Додаємо слот-символ (тест)
-  // === Оновлення розміру ===
-  function updateViewport() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+  // Тестовий слот
+  const slot = PIXI.Sprite.from('https://media.istockphoto.com/id/1040315976/de/foto/frau-betrachten-aus-einer-h%C3%B6hle-von-matera-basilikata-italien.jpg?s=612x612&w=is&k=20&c=4LA1rBiRVFLc9r0Rhvgzl5z1upijZEw2_-_jtDlr7UE=);
+  slot.anchor.set(0.5);
+  slot.x = app.screen.width / 2;
+  slot.y = app.screen.height / 2;
+  slot.width = 200;
+  slot.height = 200;
+  app.stage.addChild(slot);
+
+  // === Оновлення ===
+  function update() {
+    const w = innerWidth, h = innerHeight;
     debug.textContent = `${w}×${h}`;
     app.renderer.resize(w, h);
     slot.x = w / 2;
     slot.y = h / 2;
   }
 
-  // === Ховання панелей Safari ===
-  function hideSafariBars() {
-    window.scrollTo(0, 1);
-    container.scrollTop = 1;
+  // === ХОВАННЯ ПАНЕЛЕЙ ===
+  function hideBars() {
+    wrapper.scrollTop = 1; // КЛЮЧ: скролимо wrapper
     setTimeout(() => {
-      window.scrollTo(0, 1);
-      container.scrollTop = 1;
-      setTimeout(updateViewport, 600);
+      wrapper.scrollTop = 1;
+      setTimeout(update, 600);
     }, 100);
   }
 
-  // === Свайп вгору ===
+  // === Свайп ===
   document.addEventListener('touchstart', e => {
     startY = e.touches[0].clientY;
     e.preventDefault();
@@ -84,23 +100,19 @@
     if (!startY) return;
     const delta = startY - e.touches[0].clientY;
     if (delta > 60) {
-      hideSafariBars();
+      hideBars();
       startY = 0;
     }
     e.preventDefault();
   }, { passive: false });
 
-  // === Ініціалізація ===
+  // === Старт ===
   window.addEventListener('load', () => {
-    updateViewport();
-    window.addEventListener('resize', updateViewport);
-    if (window.visualViewport) visualViewport.addEventListener('resize', updateViewport);
-    setTimeout(hideSafariBars, 1200); // Авто-ховання
+    update();
+    window.addEventListener('resize', update);
+    if (window.visualViewport) visualViewport.addEventListener('resize', update);
+    setTimeout(hideBars, 1500);
   });
-
-  // Глобально (для Tags.ts)
-  window.pixiApp = app;
-  window.updateViewport = updateViewport;
 </script>
 
 </body>
