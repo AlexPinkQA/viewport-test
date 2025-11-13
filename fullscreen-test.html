@@ -3,81 +3,107 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Safari Fullscreen – WORKING BARS HIDE</title>
+  <title>SAFARI BARS GONE</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    html, body { 
-      height:100dvh; 
-      background:#000; 
-      overflow:hidden;
-      -webkit-overflow-scrolling: touch;
+    
+    html, body {
+      height: 100dvh;
+      overflow: hidden;
+      background: #000;
+      -webkit-user-select: none;
     }
-    canvas { width:100%; height:100%; display:block; background:#1a0033; }
-    #log {
-      position:fixed; top:10px; left:10px; z-index:9999;
-      background:rgba(0,0,0,0.8); color:#0f0; font:16px monospace;
-      padding:10px; border-radius:10px; max-width:90%;
-      backdrop-filter:blur(10px); pointer-events:none;
-    }
-    /* КЛЮЧ: невидимий скрол-контейнер */
-    #scroll-container {
-      position: absolute;
-      top: 0; left: 0; width: 1px; height: 300%; /* 3x висота екрану */
+
+    #wrapper {
+      height: 200dvh; /* 2x висота — для скролу */
+      scroll-snap-type: y mandatory;
       overflow-y: scroll;
       -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+    }
+
+    #content {
+      height: 100dvh;
+      scroll-snap-align: start;
+      background: linear-gradient(135deg, #1a001a, #330033);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #log {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 9999;
+      background: rgba(0,0,0,0.8);
+      color: #0f0;
+      font: bold 16px monospace;
+      padding: 10px;
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
-  <div id="scroll-container">
-    <canvas id="c" style="position:absolute;top:0;left:0;"></canvas>
+
+<div id="wrapper">
+  <div id="content">
+    <canvas id="c"></canvas>
   </div>
-  <div id="log">Swipe UP → bars HIDE VISUALLY!</div>
+</div>
 
-  <script>
-    const log = document.getElementById('log');
-    let startY = 0;
-    let scrollContainer = document.getElementById('scroll-container');
+<div id="log">Swipe UP → BARS GONE!</div>
 
-    function update() {
-      log.innerHTML = `Size: ${innerWidth}×${innerHeight}<br>Swipe UP to hide bars!`;
+<script>
+  const log = document.getElementById('log');
+  const wrapper = document.getElementById('wrapper');
+  let startY = 0;
+
+  function update() {
+    log.innerHTML = `Size: ${innerWidth}×${innerHeight}<br>Swipe UP!`;
+  }
+
+  function hideBars() {
+    log.innerHTML = "Hiding bars...";
+    wrapper.scrollTop = 1;
+    setTimeout(() => {
+      wrapper.scrollTop = 1;
+      setTimeout(update, 500);
+    }, 100);
+  }
+
+  document.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY;
+    log.innerHTML = `Touch: ${startY.toFixed(0)}`;
+    e.preventDefault();
+  }, {passive: false});
+
+  document.addEventListener('touchmove', e => {
+    if (!startY) return;
+    const delta = startY - e.touches[0].clientY;
+    log.innerHTML = `Delta: ${delta.toFixed(0)}px ↑`;
+    if (delta > 40) {
+      hideBars();
+      startY = 0;
     }
+    e.preventDefault();
+  }, {passive: false});
 
-    function hideBars() {
-      log.innerHTML = "Hiding Safari bars VISUALLY...";
-      
-      // КЛЮЧ: скролимо контейнер на 1px
-      scrollContainer.scrollTop = 1;
-      
-      // Подвійний скрол для гарантії
-      setTimeout(() => scrollContainer.scrollTop = 1, 100);
-      
-      // Оновлюємо розмір
-      setTimeout(update, 600);
-    }
+  window.addEventListener('load', () => {
+    update();
+    window.addEventListener('resize', update);
+    setTimeout(hideBars, 1500);
+  });
+</script>
 
-    addEventListener('touchstart', e => {
-      startY = e.touches[0].clientY;
-      log.innerHTML = `Touch: ${startY.toFixed(0)}`;
-      e.preventDefault();
-    }, {passive:false});
-
-    addEventListener('touchmove', e => {
-      if (!startY) return;
-      const delta = startY - e.touches[0].clientY;
-      log.innerHTML = `Delta: ${delta.toFixed(0)}px ↑`;
-      if (delta > 40) {
-        hideBars();
-        startY = 0;
-      }
-      e.preventDefault();
-    }, {passive:false});
-
-    addEventListener('load', () => {
-      update();
-      addEventListener('resize', update);
-      setTimeout(hideBars, 1200);
-    });
-  </script>
 </body>
 </html>
