@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>WORKING FULLSCREEN</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { height:100dvh; overflow:hidden; background:#000; }
+    canvas { width:100%; height:100%; display:block; background:#1a0033; }
+    #log {
+      position:fixed; top:10px; left:10px; z-index:9999;
+      background:rgba(0,0,0,0.8); color:#0f0; font:16px monospace;
+      padding:10px; border-radius:10px; max-width:90%;
+      backdrop-filter:blur(10px); pointer-events:none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="log">Swipe UP now!</div>
+
+  <script>
+    const log = document.getElementById('log');
+    let startY = 0;
+
+    function update() {
+      log.innerHTML = `Size: ${innerWidth}×${innerHeight}<br>Swipe UP to hide bars!`;
+    }
+
+    function hideBars() {
+      log.innerHTML = "Hiding Safari bars...";
+      scrollTo(0,1);
+      setTimeout(() => scrollTo(0,1), 100);
+      setTimeout(update, 600);
+    }
+
+    addEventListener('touchstart', e => {
+      startY = e.touches[0].clientY;
+      log.innerHTML = `Touch: ${startY.toFixed(0)}`;
+      e.preventDefault();
+    }, {passive:false});
+
+    addEventListener('touchmove', e => {
+      if (!startY) return;
+      const delta = startY - e.touches[0].clientY;
+      log.innerHTML = `Delta: ${delta.toFixed(0)}px ↑`;
+      if (delta > 40) {
+        hideBars();
+        startY = 0;
+      }
+      e.preventDefault();
+    }, {passive:false});
+
+    addEventListener('load', () => {
+      update();
+      addEventListener('resize', update);
+      setTimeout(hideBars, 1200);
+    });
+  </script>
+</body>
+</html>
