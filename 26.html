@@ -4,110 +4,103 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>Slots – Fullscreen Swipe</title>
+  <title>Chili Slots – Fullscreen</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    
-    html, body {
-      height: 100dvh;
-      overflow: hidden;
-      background: #000;
-      -webkit-text-size-adjust: none;
-      -webkit-user-select: none;
+    html, body { height:100dvh; overflow:hidden; background:#000; }
+    #game-container {
+      position:fixed; top:0; left:0; right:0; bottom:0;
+      overflow-y:auto; -webkit-overflow-scrolling:touch;
+      scroll-snap-type:y mandatory; scroll-behavior:smooth;
     }
-
-    #game {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: #1a001a;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      scroll-snap-type: y mandatory;
-      scroll-behavior: smooth;
-    }
-
-    #content {
-      height: 100dvh;
-      scroll-snap-align: start;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #0f0;
-      font: bold 24px monospace;
-    }
-
-    canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
+    #game { height:100dvh; scroll-snap-align:start; position:relative; }
+    canvas { display:block; width:100%; height:100%; }
     #debug {
-      position: fixed;
-      top: 10px; left: 10px;
-      background: rgba(0,0,0,0.7);
-      color: #0f0;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font: 14px monospace;
-      z-index: 9999;
-      pointer-events: none;
-      backdrop-filter: blur(10px);
+      position:fixed; top:10px; left:10px; z-index:9999;
+      background:rgba(0,0,0,0.7); color:#0f0; padding:8px 12px;
+      border-radius:8px; font:14px monospace; pointer-events:none;
+      backdrop-filter:blur(10px);
     }
   </style>
 </head>
 <body>
 
-<div id="game">
-  <div id="content">
-    <canvas id="canvas"></canvas>
+<div id="game-container">
+  <div id="game">
+    <canvas id="pixi-canvas"></canvas>
     <div id="debug">Swipe UP</div>
   </div>
 </div>
 
-<script>
-  const debug = document.getElementById('debug');
-  const game = document.getElementById('game');
-  let startY = 0;
+<!-- PixiJS 6.5.6 -->
+<script src="https://cdn.jsdelivr.net/npm/pixi.js@6.5.6/dist/browser/pixi.min.js"></script>
 
-  function update() {
-    debug.textContent = `${innerWidth}×${innerHeight}`;
+<script type="module">
+  import { Application, Sprite, Texture } from 'pixi.js';
+
+  const debug = document.getElementById('debug');
+  const container = document.getElementById('game-container');
+  let startY = 0;
+  // === PixiJS App ===
+  const app = new Application({
+    view: document.getElementById('pixi-canvas'),
+    width: window.innerWidth,
+    height: window.innerHeight,
+    backgroundColor: 0x1a001a,
+    antialias: true,
+    resolution: window.devicePixelRatio || 1,
+    autoDensity: true,
+  });
+
+  // Додаємо слот-символ (тест)
+  // === Оновлення розміру ===
+  function updateViewport() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    debug.textContent = `${w}×${h}`;
+    app.renderer.resize(w, h);
+    slot.x = w / 2;
+    slot.y = h / 2;
   }
 
-  function hideBars() {
-    // КЛЮЧ: scrollTo(0,1) + scrollTop на контейнері
+  // === Ховання панелей Safari ===
+  function hideSafariBars() {
     window.scrollTo(0, 1);
-    game.scrollTop = 1;
+    container.scrollTop = 1;
     setTimeout(() => {
       window.scrollTo(0, 1);
-      game.scrollTop = 1;
-      setTimeout(update, 600);
+      container.scrollTop = 1;
+      setTimeout(updateViewport, 600);
     }, 100);
   }
 
-  // Свайп
+  // === Свайп вгору ===
   document.addEventListener('touchstart', e => {
     startY = e.touches[0].clientY;
     e.preventDefault();
-  }, {passive: false});
+  }, { passive: false });
 
   document.addEventListener('touchmove', e => {
     if (!startY) return;
     const delta = startY - e.touches[0].clientY;
     if (delta > 60) {
-      hideBars();
+      hideSafariBars();
       startY = 0;
     }
     e.preventDefault();
-  }, {passive: false});
+  }, { passive: false });
 
-  // Ініціалізація
+  // === Ініціалізація ===
   window.addEventListener('load', () => {
-    update();
-    window.addEventListener('resize', update);
-    if (window.visualViewport) visualViewport.addEventListener('resize', update);
-    setTimeout(hideBars, 1200);
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+    if (window.visualViewport) visualViewport.addEventListener('resize', updateViewport);
+    setTimeout(hideSafariBars, 1200); // Авто-ховання
   });
+
+  // Глобально (для Tags.ts)
+  window.pixiApp = app;
+  window.updateViewport = updateViewport;
 </script>
 
 </body>
