@@ -3,10 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>WORKING FULLSCREEN</title>
+  <title>Safari Fullscreen – WORKING BARS HIDE</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    html, body { height:100dvh; overflow:hidden; background:#000; }
+    html, body { 
+      height:100dvh; 
+      background:#000; 
+      overflow:hidden;
+      -webkit-overflow-scrolling: touch;
+    }
     canvas { width:100%; height:100%; display:block; background:#1a0033; }
     #log {
       position:fixed; top:10px; left:10px; z-index:9999;
@@ -14,24 +19,40 @@
       padding:10px; border-radius:10px; max-width:90%;
       backdrop-filter:blur(10px); pointer-events:none;
     }
+    /* КЛЮЧ: невидимий скрол-контейнер */
+    #scroll-container {
+      position: absolute;
+      top: 0; left: 0; width: 1px; height: 300%; /* 3x висота екрану */
+      overflow-y: scroll;
+      -webkit-overflow-scrolling: touch;
+    }
   </style>
 </head>
 <body>
-  <canvas id="c"></canvas>
-  <div id="log">Swipe UP now!</div>
+  <div id="scroll-container">
+    <canvas id="c" style="position:absolute;top:0;left:0;"></canvas>
+  </div>
+  <div id="log">Swipe UP → bars HIDE VISUALLY!</div>
 
   <script>
     const log = document.getElementById('log');
     let startY = 0;
+    let scrollContainer = document.getElementById('scroll-container');
 
     function update() {
       log.innerHTML = `Size: ${innerWidth}×${innerHeight}<br>Swipe UP to hide bars!`;
     }
 
     function hideBars() {
-      log.innerHTML = "Hiding Safari bars...";
-      scrollTo(0,1);
-      setTimeout(() => scrollTo(0,1), 100);
+      log.innerHTML = "Hiding Safari bars VISUALLY...";
+      
+      // КЛЮЧ: скролимо контейнер на 1px
+      scrollContainer.scrollTop = 1;
+      
+      // Подвійний скрол для гарантії
+      setTimeout(() => scrollContainer.scrollTop = 1, 100);
+      
+      // Оновлюємо розмір
       setTimeout(update, 600);
     }
 
