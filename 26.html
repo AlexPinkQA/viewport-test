@@ -2,61 +2,113 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Slots – Fullscreen Swipe</title>
   <style>
-    * { margin:0; padding:0; }
-    body, html { height:100%; background:#111; color:#0f0; font-family:monospace; }
-    #log { padding:20px; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    
+    html, body {
+      height: 100dvh;
+      overflow: hidden;
+      background: #000;
+      -webkit-text-size-adjust: none;
+      -webkit-user-select: none;
+    }
+
+    #game {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #1a001a;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
+    }
+
+    #content {
+      height: 100dvh;
+      scroll-snap-align: start;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0f0;
+      font: bold 24px monospace;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #debug {
+      position: fixed;
+      top: 10px; left: 10px;
+      background: rgba(0,0,0,0.7);
+      color: #0f0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font: 14px monospace;
+      z-index: 9999;
+      pointer-events: none;
+      backdrop-filter: blur(10px);
+    }
   </style>
 </head>
 <body>
-  <div id="log">Loading...</div>
 
-  <script>
-    // БЕЗПЕЧНИЙ ЛОГ
-    const log = (msg) => {
-      const el = document.getElementById('log');
-      if (el) el.innerHTML += msg + '<br>';
-      console.log(msg);
-    };
+<div id="game">
+  <div id="content">
+    <canvas id="canvas"></canvas>
+    <div id="debug">Swipe UP</div>
+  </div>
+</div>
 
-    try {
-      log('Page loaded');
-      log('UserAgent: ' + navigator.userAgent);
-      log('innerWidth: ' + innerWidth);
-      log('innerHeight: ' + innerHeight);
+<script>
+  const debug = document.getElementById('debug');
+  const game = document.getElementById('game');
+  let startY = 0;
 
-      // Перевірка WebView
-      log('webkit.messageHandlers: ' + !!window.webkit?.messageHandlers);
-      log('Capacitor: ' + !!window.Capacitor);
-      log('cordova: ' + typeof cordova);
+  function update() {
+    debug.textContent = `${innerWidth}×${innerHeight}`;
+  }
 
-      // Свайп
-      let startY = 0;
-      document.addEventListener('touchstart', e => {
-        startY = e.touches[0].clientY;
-        log('Touch start: ' + startY);
-      }, {passive: false});
+  function hideBars() {
+    // КЛЮЧ: scrollTo(0,1) + scrollTop на контейнері
+    window.scrollTo(0, 1);
+    game.scrollTop = 1;
+    setTimeout(() => {
+      window.scrollTo(0, 1);
+      game.scrollTop = 1;
+      setTimeout(update, 600);
+    }, 100);
+  }
 
-      document.addEventListener('touchmove', e => {
-        if (!startY) return;
-        const delta = startY - e.touches[0].clientY;
-        log('Delta: ' + delta);
-        if (delta > 50) {
-          log('SWIPE UP — trying to hide bars');
-          // Спроба через WebView
-          if (window.webkit?.messageHandlers?.hideToolbar) {
-            window.webkit.messageHandlers.hideToolbar.postMessage(null);
-            log('Sent hideToolbar command');
-          }
-          startY = 0;
-        }
-      }, {passive: false});
+  // Свайп
+  document.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY;
+    e.preventDefault();
+  }, {passive: false});
 
-    } catch (e) {
-      log('ERROR: ' + e.message);
+  document.addEventListener('touchmove', e => {
+    if (!startY) return;
+    const delta = startY - e.touches[0].clientY;
+    if (delta > 60) {
+      hideBars();
+      startY = 0;
     }
-  </script>
+    e.preventDefault();
+  }, {passive: false});
+
+  // Ініціалізація
+  window.addEventListener('load', () => {
+    update();
+    window.addEventListener('resize', update);
+    if (window.visualViewport) visualViewport.addEventListener('resize', update);
+    setTimeout(hideBars, 1200);
+  });
+</script>
+
 </body>
 </html>
