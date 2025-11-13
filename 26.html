@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Viewport Testing - Game Window</title>
   <style>
+    /* Reset default margins and ensure full height */
     html, body {
       margin: 0;
       padding: 0;
@@ -13,10 +14,10 @@
       font-size: 14px;
       height: 100%;
       overflow: hidden;
-      position: relative; /* Для позиціонування рамки */
+      position: relative; /* Needed for absolute/fixed positioning */
     }
 
-    /* ЧЕРВОНА РАМКА ПО ПЕРИМЕТРУ VIEWPORT */
+    /* Red border around the actual viewport (visual game area) */
     .viewport-border {
       position: fixed;
       top: 0;
@@ -24,11 +25,12 @@
       right: 0;
       bottom: 0;
       border: 1px solid red;
-      pointer-events: none; /* Не блокує кліки */
+      pointer-events: none; /* Allows clicks to pass through */
       z-index: 9998;
       box-sizing: border-box;
     }
 
+    /* Info box with viewport data */
     .info-box {
       position: fixed;
       top: 10px;
@@ -46,25 +48,38 @@
 </head>
 <body>
 
-  <!-- ЧЕРВОНА РАМКА -->
+  <!-- Red frame showing the actual game viewport -->
   <div class="viewport-border"></div>
 
-  <!-- Інформація про viewport -->
+  <!-- Viewport info display -->
   <pre id="viewport-info" class="info-box">Loading viewport info...</pre>
 
   <script>
+    // Update viewport information including DPR-scaled canvas size
     function updateViewportInfo() {
-      const gameWindowSize = `Actual game window size (put this in DevTools): ${window.innerWidth} × ${window.innerHeight}`;
-      document.getElementById('viewport-info').textContent = gameWindowSize;
+      const dpr = window.devicePixelRatio || 1;
+      const cssWidth = window.innerWidth;
+      const cssHeight = window.innerHeight;
+      const canvasWidth = Math.round(cssWidth * dpr);
+      const canvasHeight = Math.round(cssHeight * dpr);
+
+      const info = 
+`Actual game window size (CSS pixels): ${cssWidth} × ${cssHeight}
+Canvas size (with DPR=${dpr.toFixed(2)}): ${canvasWidth} × ${canvasHeight}
+Put this in your game init:
+  let width = ${canvasWidth};
+  let height = ${canvasHeight};`;
+
+      document.getElementById('viewport-info').textContent = info;
       console.clear();
-      console.log(gameWindowSize);
+      console.log(info);
     }
 
-    // Оновлюємо при зміні розміру
+    // Update on window resize and orientation change
     window.addEventListener('resize', updateViewportInfo);
     window.addEventListener('orientationchange', updateViewportInfo);
 
-    // Початкове оновлення
+    // Initial update on load
     updateViewportInfo();
   </script>
 </body>
