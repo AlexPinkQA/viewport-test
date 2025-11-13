@@ -1,123 +1,136 @@
-<!DOCTYPE html>
-<html lang="uk">
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Slots – FULLSCREEN</title>
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    html, body { height:100dvh; overflow:hidden; background:#000; }
+    <meta charset="utf-8" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no, shrink-to-fit=no">
+    <title>iOS Canvas Test – FULLSCREEN</title>
+    <style>
+        html, body { margin:0; height:100%; background:#000; color:#fff; }
+        html { -webkit-text-size-adjust: 100% !important; }
+        .wrap { width:100vw; height:100dvh; }
+        @supports not (height: 100dvh) { .wrap { height:100vh; } }
+        body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+        canvas { display:block; width:100%; height:100%; }
 
-    /* НЕВИДИМИЙ хак для Safari */
-    #scroll-hack {
-      position: fixed;
-      top: 0; left: 0;
-      width: 1px; height: 200dvh;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      opacity: 0;
-      pointer-events: none;
-      z-index: -1;
-    }
+        /* НЕВИДИМИЙ ХАК ДЛЯ СКРОЛУ */
+        #scroll-hack {
+            position: fixed; top: 0; left: 0;
+            width: 1px; height: 200dvh;
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
+            opacity: 0; pointer-events: none; z-index: -1;
+        }
 
-    #game {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: #1a001a;
-    }
-
-    canvas { display:block; width:100%; height:100%; }
-
-    #debug {
-      position:fixed; top:10px; left:10px; z-index:9999;
-      background:rgba(0,0,0,0.7); color:#0f0; padding:8px 12px;
-      border-radius:8px; font:14px monospace; pointer-events:none;
-      backdrop-filter:blur(10px);
-    }
-  </style>
+        .hud { position:fixed; left:8px; top:8px; font:12px/1.2 system-ui; opacity:.8; background:rgba(0,0,0,0.6); padding:8px; border-radius:8px; }
+    </style>
 </head>
 <body>
 
-<!-- Хак для скролу -->
+<!-- ХАК -->
 <div id="scroll-hack"></div>
 
-<!-- Гра -->
-<div id="game">
-  <canvas id="pixi-canvas"></canvas>
-  <div id="debug">Swipe UP</div>
+<div class="wrap">
+    <canvas id="c"></canvas>
 </div>
+<pre class="hud" id="hud"></pre>
 
-<script src="https://cdn.jsdelivr.net/npm/pixi.js@6.5.6/dist/browser/pixi.min.js"></script>
+<script>
+    (function(){
+        const canvas = document.getElementById('c');
+        const hud = document.getElementById('hud');
+        const scrollHack = document.getElementById('scroll-hack');
+        let startY = 0;
 
-<script type="module">
-  const debug = document.getElementById('debug');
-  const scrollHack = document.getElementById('scroll-hack');
-  let startY = 0;
+        function log() {
+            const vv = window.visualViewport;
+            const r = canvas.getBoundingClientRect();
+            hud.textContent =
+                `inner: ${innerWidth}×${innerHeight}\n` +
+                `vv: ${vv?.width.toFixed(1)}×${vv?.height.toFixed(1)} @ scale ${vv?.scale?.toFixed(3)}\n` +
+                `rect: ${r.width.toFixed(1)}×${r.height.toFixed(1)}\n` +
+                `css: ${canvas.clientWidth}×${canvas.clientHeight}\n` +
+                `dpr: ${devicePixelRatio}`;
+        }
 
-  // === PixiJS ===
-  const app = new PIXI.Application({
-    view: document.getElementById('pixi-canvas'),
-    width: window.innerWidth,
-    height: window.innerHeight,
-    backgroundColor: 0x1a001a,
-    antialias: true,
-    resolution: window.devicePixelRatio,
-    autoDensity: true,
-  });
+        function sizeCanvas() {
+            const cssW = canvas.clientWidth;
+            const cssH = canvas.clientHeight;
+            const dpr = window.devicePixelRatio || 1;
+            const vv = window.visualViewport;
+            const pr = Math.min(dpr * (vv ? 1 / vv.scale : 1), 3);
+            const w = Math.round(cssW * pr);
+            const h = Math.round(cssH * pr);
+            if (canvas.width !== w || canvas.height !== h) {
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.setTransform(pr, 0, 0, pr, 0, 0);
+                draw(ctx, cssW, cssH);
+            }
+            log();
+        }
 
-  // ТВОЄ ЗОБРАЖЕННЯ
-  const imageUrl = 'https://media.istockphoto.com/id/1040315976/de/foto/frau-betrachten-aus-einer-h%C3%B6hle-von-matera-basilikata-italien.jpg?s=612x612&w=is&k=20&c=4LA1rBiRVFLc9r0Rhvgzl5z1upijZEw2_-_jtDlr7UE=';
-  
-  const slot = PIXI.Sprite.from(imageUrl);
-  slot.anchor.set(0.5);
-  slot.x = app.screen.width / 2;
-  slot.y = app.screen.height / 2;
-  slot.width = 300;
-  slot.height = 300;
-  app.stage.addChild(slot);
+        function draw(ctx, w, h) {
+            ctx.clearRect(0,0,w,h);
+            const grad = ctx.createLinearGradient(0,0,w,h);
+            grad.addColorStop(0,'#0ff'); grad.addColorStop(1,'#f0f');
+            ctx.fillStyle = grad; ctx.fillRect(0,0,w,h);
+            ctx.fillStyle = '#111'; ctx.fillRect(10,10, w-20, 60);
+            ctx.fillStyle = '#fff'; ctx.font = '24px system-ui';
+            ctx.fillText(`Canvas CSS: ${Math.round(w)}×${Math.round(h)}`, 20, 50);
+        }
 
-  // === Оновлення ===
-  function update() {
-    const w = innerWidth, h = innerHeight;
-    debug.textContent = `${w}×${h}`;
-    app.renderer.resize(w, h);
-    slot.x = w / 2;
-    slot.y = h / 2;
-  }
+        function settle(fn){ requestAnimationFrame(()=>requestAnimationFrame(fn)); }
+        const onChange = () => settle(sizeCanvas);
+        window.addEventListener('resize', onChange);
+        window.addEventListener('orientationchange', onChange);
+        window.visualViewport && window.visualViewport.addEventListener('resize', onChange);
+        document.addEventListener('visibilitychange', onChange);
 
-  // === Ховання панелей ===
-  function hideBars() {
-    scrollHack.scrollTop = 1;
-    setTimeout(() => {
-      scrollHack.scrollTop = 1;
-      setTimeout(update, 600);
-    }, 100);
-  }
+        // === ХОВАННЯ ПАНЕЛЕЙ ===
+        function hideBars() {
+            scrollHack.scrollTop = 1;
+            setTimeout(() => {
+                scrollHack.scrollTop = 1;
+                setTimeout(sizeCanvas, 600);
+            }, 100);
+        }
 
-  // === Свайп ===
-  document.addEventListener('touchstart', e => {
-    startY = e.touches[0].clientY;
-    e.preventDefault();
-  }, { passive: false });
+        // === СВАЙП ВГОРУ ===
+        document.addEventListener('touchstart', e => {
+            startY = e.touches[0].clientY;
+            e.preventDefault();
+        }, { passive: false });
 
-  document.addEventListener('touchmove', e => {
-    if (!startY) return;
-    const delta = startY - e.touches[0].clientY;
-    if (delta > 60) {
-      hideBars();
-      startY = 0;
-    }
-    e.preventDefault();
-  }, { passive: false });
+        document.addEventListener('touchmove', e => {
+            if (!startY) return;
+            const delta = startY - e.touches[0].clientY;
+            if (delta > 60) {
+                hideBars();
+                startY = 0;
+            }
+            e.preventDefault();
+        }, { passive: false });
 
-  // === Старт ===
-  window.addEventListener('load', () => {
-    update();
-    window.addEventListener('resize', update);
-    if (window.visualViewport) visualViewport.addEventListener('resize', update);
-    setTimeout(hideBars, 1500);
-  });
+        // === СТАРТ ===
+        onChange();
+        setTimeout(hideBars, 1500);
+
+        // Chrome iOS fix
+        if (/CriOS\/\d+/.test(navigator.userAgent)) {
+            window.addEventListener('load', () => {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        window.scrollTo(0, 0);
+                        sizeCanvas();
+                    });
+                });
+            });
+        }
+
+        // Авто-ховання при першому тапі
+        window.addEventListener('pointerdown', hideBars, { once: true });
+    })();
 </script>
-
 </body>
 </html>
