@@ -1,93 +1,60 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
+  <meta charset="UTF-8" />
+  <!-- Meta tag for full viewport including iPhone notch areas -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Viewport Testing - Game Window</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #555555; /* gray background */
+      font-family: monospace;
+      font-size: 14px;
+      height: 100vh; /* full viewport height */
+      width: 100vw;
+      overflow: hidden; /* hide scrollbars */
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-  <meta charset="UTF-8" />
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>Viewport Testing - Game Window</title>
-
-  <style>
-
-    html, body {
-
-      margin: 0;
-
-      padding: 0;
-
-      background: #555555; /* changed to gray */
-
-      font-family: monospace;
-
-      font-size: 14px;
-
-      height: 100%;
-
-      overflow: hidden;
-
-    }
-
-    .info-box {
-
-      position: fixed;
-
-      top: 10px;
-
-      left: 10px;
-
-      right: 10px;
-
-      background: rgba(0, 0, 0, 0.75);
-
-      border: 1px solid #00ff90;
-
-      border-radius: 12px;
-
-      padding: 12px;
-
-      white-space: pre-wrap;
-
-      z-index: 9999;
-
-      color: #00ff90; /* green */
-
-    }
-
-  </style>
-
+    .info-box {
+      position: fixed;
+      top: env(safe-area-inset-top, 10px);
+      left: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.75);
+      border: 1px solid #00ff90;
+      border-radius: 12px;
+      padding: 12px;
+      white-space: pre-wrap;
+      z-index: 9999;
+      color: #00ff90; /* green text */
+      text-align: center;
+    }
+  </style>
 </head>
-
 <body>
+  <pre id="viewport-info" class="info-box">Loading viewport info...</pre>
 
-  <pre id="viewport-info" class="info-box">Loading viewport info...</pre>
+  <script>
+    function updateViewportInfo() {
+      const gameWindowSize = `🪟  Actual game window size (put this in DevTools): ${window.innerWidth} × ${window.innerHeight}`;
+      document.getElementById('viewport-info').textContent = gameWindowSize;
+      console.clear();
+      console.log(gameWindowSize);
+    }
 
+    // Update on resize
+    window.addEventListener('resize', updateViewportInfo);
 
+    // Trigger once on load
+    updateViewportInfo();
 
-  <script>
-
-    function updateViewportInfo() {
-
-      const gameWindowSize = `🪟  Actual game window size (put this in DevTools): ${window.innerWidth} × ${window.innerHeight}`;
-
-      document.getElementById('viewport-info').textContent = gameWindowSize;
-
-      console.clear();
-
-      console.log(gameWindowSize);
-
-    }
-
-
-
-    window.addEventListener('resize', updateViewportInfo);
-
-    updateViewportInfo();
-
-  </script>
-
+    // Optional: attempt to hide Safari nav/footer with a small scroll
+    window.addEventListener('load', () => setTimeout(() => window.scrollTo(0, 1), 100));
+  </script>
 </body>
-
 </html>
