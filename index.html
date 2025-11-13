@@ -2,16 +2,16 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport |
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Safari Fullscreen – Swipe Up</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
-            height: 100dvh; /* Використовуємо dvh — динамічний viewport */
+            height: 100dvh;
             overflow: hidden;
             background: #000;
             -webkit-user-select: none;
+            -webkit-touch-callout: none;
         }
         #canvas {
             width: 100%;
@@ -42,50 +42,42 @@
 <script>
     const debug = document.getElementById('debug');
     let startY = 0;
-    const THRESHOLD = 60; // пікселів
+    const THRESHOLD = 60;
 
-    // === Оновлення розміру ===
     function update() {
         const w = window.innerWidth;
         const h = window.innerHeight;
         debug.textContent = `${w}×${h}`;
-        console.log('Viewport:', w, 'x', h);
     }
 
-    // === Ховаємо панелі Safari ===
     function hideSafariBars() {
-        // Ключ: scrollTo(0,1) — ховає обидві панелі
         window.scrollTo(0, 1);
         setTimeout(() => window.scrollTo(0, 1), 100);
         setTimeout(update, 500);
     }
 
-    // === Обробка свайпу ===
+    // КЛЮЧ: touchmove + preventDefault
     document.addEventListener('touchstart', (e) => {
         startY = e.touches[0].clientY;
-        e.preventDefault(); // Критично!
+        e.preventDefault();
     }, { passive: false });
 
     document.addEventListener('touchmove', (e) => {
         if (!startY) return;
         const currentY = e.touches[0].clientY;
         const delta = startY - currentY;
-
         if (delta > THRESHOLD) {
             hideSafariBars();
-            startY = 0; // Скидаємо, щоб не спрацьовувало повторно
+            startY = 0;
         }
     }, { passive: false });
 
-    // === Ініціалізація ===
     window.addEventListener('load', () => {
         update();
         window.addEventListener('resize', update);
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', update);
         }
-
-        // Автоматично ховаємо через 1 сек
         setTimeout(hideSafariBars, 1000);
     });
 </script>
