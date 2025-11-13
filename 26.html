@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Safari Fullscreen iOS 26 – Bars Hide!</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    
+    html, body {
+      height: 100svh; /* Small viewport для iOS 26+ */
+      overflow: hidden;
+      background: #000;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    /* КЛЮЧ: Контейнер для реального скролу */
+    #scroll-wrapper {
+      height: 150svh; /* 1.5x висота — для природного скролу */
+      overflow-y: auto; /* Дозволяємо скрол */
+      -webkit-overflow-scrolling: touch; /* Плавний скрол */
+      scroll-behavior: smooth;
+    }
+
+    #content {
+      height: 100svh; /* Основний контент */
+      background: linear-gradient(135deg, #1a001a, #330033);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #log {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 9999;
+      background: rgba(0,0,0,0.8);
+      color: #0f0;
+      font: bold 16px monospace;
+      padding: 10px;
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+      pointer-events: none;
+      max-width: 90%;
+    }
+  </style>
+</head>
+<body>
+
+<div id="scroll-wrapper">
+  <div id="content">
+    <canvas id="c"></canvas>
+  </div>
+</div>
+
+<div id="log">Swipe UP fast → Bars HIDE on iOS 26!</div>
+
+<script>
+  const log = document.getElementById('log');
+  const wrapper = document.getElementById('scroll-wrapper');
+  let startY = 0;
+
+  function update() {
+    const w = innerWidth;
+    const h = innerHeight;
+    log.innerHTML = `Viewport: ${w}×${h}<br>Swipe UP (50+px) for fullscreen!`;
+    console.log('Viewport:', w, 'x', h);
+  }
+
+  function hideBars() {
+    log.innerHTML = "Hiding bars... (iOS 26 fix)";
+    console.log('Triggering scroll on wrapper...');
+    
+    // КЛЮЧ: Справжній скрол на 1px + затримка
+    wrapper.scrollTop = 1;
+    setTimeout(() => {
+      wrapper.scrollTop = 1; // Повтор для гарантії
+    }, 50);
+    
+    setTimeout(() => {
+      update(); // Оновлюємо розмір після ховання
+    }, 600);
+  }
+
+  // Touch події з preventDefault
+  addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY;
+    log.innerHTML = `Touch start: ${startY.toFixed(0)}`;
+    e.preventDefault();
+  }, {passive: false});
+
+  addEventListener('touchmove', e => {
+    if (!startY) return;
+    const delta = startY - e.touches[0].clientY;
+    log.innerHTML = `Delta: ${delta.toFixed(0)}px ↑`;
+    console.log('Delta:', delta);
+    
+    if (delta > 50) { // Поріг 50px для iOS 26
+      hideBars();
+      startY = 0;
+    }
+    e.preventDefault();
+  }, {passive: false});
+
+  // Ініціалізація
+  addEventListener('load', () => {
+    update();
+    addEventListener('resize', update);
+    if (window.visualViewport) {
+      visualViewport.addEventListener('resize', update);
+    }
+    // Авто-ховання через 1.5 сек
+    setTimeout(hideBars, 1500);
+    console.log('Ready for iOS 26 swipe!');
+  });
+</script>
+
+</body>
+</html>
