@@ -1,6 +1,62 @@
-<script>
-  console.log('UserAgent:', navigator.userAgent);
-  console.log('webkit.messageHandlers?', !!window.webkit?.messageHandlers);
-  console.log('Capacitor?', !!window.Capacitor);
-  console.log('Cordova?', typeof cordova !== 'undefined');
-</script>
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Test</title>
+  <style>
+    * { margin:0; padding:0; }
+    body, html { height:100%; background:#111; color:#0f0; font-family:monospace; }
+    #log { padding:20px; }
+  </style>
+</head>
+<body>
+  <div id="log">Loading...</div>
+
+  <script>
+    // БЕЗПЕЧНИЙ ЛОГ
+    const log = (msg) => {
+      const el = document.getElementById('log');
+      if (el) el.innerHTML += msg + '<br>';
+      console.log(msg);
+    };
+
+    try {
+      log('Page loaded');
+      log('UserAgent: ' + navigator.userAgent);
+      log('innerWidth: ' + innerWidth);
+      log('innerHeight: ' + innerHeight);
+
+      // Перевірка WebView
+      log('webkit.messageHandlers: ' + !!window.webkit?.messageHandlers);
+      log('Capacitor: ' + !!window.Capacitor);
+      log('cordova: ' + typeof cordova);
+
+      // Свайп
+      let startY = 0;
+      document.addEventListener('touchstart', e => {
+        startY = e.touches[0].clientY;
+        log('Touch start: ' + startY);
+      }, {passive: false});
+
+      document.addEventListener('touchmove', e => {
+        if (!startY) return;
+        const delta = startY - e.touches[0].clientY;
+        log('Delta: ' + delta);
+        if (delta > 50) {
+          log('SWIPE UP — trying to hide bars');
+          // Спроба через WebView
+          if (window.webkit?.messageHandlers?.hideToolbar) {
+            window.webkit.messageHandlers.hideToolbar.postMessage(null);
+            log('Sent hideToolbar command');
+          }
+          startY = 0;
+        }
+      }, {passive: false});
+
+    } catch (e) {
+      log('ERROR: ' + e.message);
+    }
+  </script>
+</body>
+</html>
